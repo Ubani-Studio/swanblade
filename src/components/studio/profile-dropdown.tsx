@@ -55,7 +55,7 @@ export function ProfileDropdown() {
 
   if (loading) {
     return (
-      <div className="w-8 h-8 bg-[#0a0a0a] border border-white/[0.06] flex items-center justify-center">
+      <div className="w-8 h-8 bg-black border border-white/[0.06] flex items-center justify-center">
         <div className="w-3 h-3 border border-gray-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -65,7 +65,7 @@ export function ProfileDropdown() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-8 h-8 bg-[#0a0a0a] border border-white/[0.06] flex items-center justify-center text-sm text-gray-400 hover:text-white hover:border-white/[0.12] transition-all duration-200"
+        className="w-8 h-8 bg-black border border-white/[0.06] flex items-center justify-center text-sm text-gray-400 hover:text-white hover:border-white/[0.12] transition-all duration-200"
         title={displayName}
       >
         {profile?.avatar_url ? (
@@ -80,7 +80,7 @@ export function ProfileDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-[#0a0a0a] border border-white/[0.06] shadow-lg z-50">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-black border border-white/[0.06] shadow-lg z-50">
           {/* User info */}
           <div className="px-4 py-3 border-b border-white/[0.06]">
             <p className="text-sm text-white truncate">{displayName}</p>

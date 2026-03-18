@@ -139,7 +139,7 @@ function ModifierBadge({ label, value, suffix }: ModifierBadgeProps) {
   const isNegative = value < 0;
 
   return (
-    <div className="flex items-center justify-between bg-[#0a0a0a] px-2 py-1 border border-[#1a1a1a]">
+    <div className="flex items-center justify-between bg-black px-2 py-1 border border-[#1a1a1a]">
       <span className="text-gray-500">{label}</span>
       <span
         className={

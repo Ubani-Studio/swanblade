@@ -48,7 +48,7 @@ export function OutputPanel({
 }) {
   return (
     <div className="space-y-4">
-      <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+      <div className="bg-black border border-white/[0.06] p-6">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-gray-400">Output</p>
           <HistoryControls

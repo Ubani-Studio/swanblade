@@ -46,7 +46,7 @@ export function SoundParametersPanel({ value, onChange }: SoundParametersPanelPr
   };
 
   return (
-    <div className="flex h-full flex-col gap-6 border border-[#1a1a1a] bg-[#0a0a0a] p-6">
+    <div className="flex h-full flex-col gap-6 border border-[#1a1a1a] bg-black p-6">
       <div>
         <p className="text-sm text-gray-400">Sound Parameters</p>
         <h3 className="mt-2 font-display text-display-md text-white">Designer Controls</h3>

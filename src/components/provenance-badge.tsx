@@ -25,7 +25,7 @@ export function ProvenanceBadge({ provenance, provenanceResult, className }: Pro
   }
 
   return (
-    <div className={cn("border border-[#1a1a1a] bg-[#0a0a0a]", className)}>
+    <div className={cn("border border-[#1a1a1a] bg-black", className)}>
       <div
         className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-black transition-colors"
         onClick={() => setExpanded(!expanded)}

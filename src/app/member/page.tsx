@@ -25,7 +25,7 @@ interface UsageStats {
 export default function MemberPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-white/40">Loading...</div>
       </div>
     }>
@@ -60,7 +60,6 @@ function MemberPageContent() {
         return;
       }
 
-      // Get profile
       const { data: profile } = await supabase
         .from("profiles")
         .select("*")
@@ -80,7 +79,6 @@ function MemberPageContent() {
           stripe_subscription_id: profile.stripe_subscription_id,
         });
       } else {
-        // Profile doesn't exist yet (dev mode)
         setMember({
           id: user.id,
           name: user.email?.split("@")[0] || "Member",
@@ -94,7 +92,6 @@ function MemberPageContent() {
         });
       }
 
-      // Get usage stats (if table exists)
       try {
         const { data: usageData } = await supabase
           .from("sounds")
@@ -161,33 +158,25 @@ function MemberPageContent() {
 
   const getTierDisplay = (tier: string) => {
     switch (tier) {
-      case "professional":
-        return "Professional";
-      case "studio":
-        return "Studio";
-      case "enterprise":
-        return "Enterprise";
-      default:
-        return "Pending";
+      case "professional": return "Professional";
+      case "studio": return "Studio";
+      case "enterprise": return "Enterprise";
+      default: return "Pending";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
-        return "text-green-400";
-      case "past_due":
-        return "text-yellow-400";
-      case "cancelled":
-        return "text-red-400";
-      default:
-        return "text-white/40";
+      case "active": return "text-green-400";
+      case "past_due": return "text-yellow-400";
+      case "cancelled": return "text-red-400";
+      default: return "text-white/40";
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-white/40">Loading...</div>
       </div>
     );
@@ -195,7 +184,7 @@ function MemberPageContent() {
 
   if (!member) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-white/40 mb-4">Not authenticated</p>
           <Link href="/login" className="text-white/70 hover:text-white underline">
@@ -207,25 +196,23 @@ function MemberPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="border-b border-white/5 px-6 py-5">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Link href="/" className="font-display text-lg tracking-wide">
+          <Link href="/" className="font-display font-light text-lg tracking-wide">
             Swanblade
           </Link>
           <div className="flex items-center gap-6">
             <Link
               href="/studio"
-              className="text-xs uppercase tracking-widest text-white/40 hover:text-white transition"
-             
+              className="text-sm text-white/40 hover:text-white transition"
             >
               Enter Studio
             </Link>
             <button
               onClick={handleSignOut}
-              className="text-xs uppercase tracking-widest text-white/30 hover:text-white/60 transition"
-             
+              className="text-sm text-white/30 hover:text-white/60 transition"
             >
               Sign Out
             </button>
@@ -247,160 +234,95 @@ function MemberPageContent() {
       {/* Member Info */}
       <main className="max-w-3xl mx-auto px-6 py-16">
         <div className="mb-16">
-          <p className="font-mono text-xs text-white/30 tracking-wider mb-2">
-            {member.id.slice(0, 8).toUpperCase()}
-          </p>
-          <h1 className="text-3xl font-display">{member.name}</h1>
-          <p className="text-white/40 mt-1">
+          <h1 className="text-3xl font-display font-light">{member.name}</h1>
+          <p className="text-white/40 text-sm mt-1">
             {member.email}
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-6 mb-16">
-          <div className="border border-white/10 p-6">
-            <p
-              className="text-xs uppercase tracking-widest text-white/30 mb-2"
-             
-            >
-              Membership
-            </p>
-            <p className="text-xl font-display">{getTierDisplay(member.membership_tier)}</p>
+        <div className="grid grid-cols-3 gap-4 mb-16">
+          <div className="border border-white/10 p-5">
+            <p className="text-xs text-white/30 mb-2">Membership</p>
+            <p className="text-lg">{getTierDisplay(member.membership_tier)}</p>
             <p className={`text-xs mt-1 ${getStatusColor(member.membership_status)}`}>
               {member.membership_status}
             </p>
           </div>
-          <div className="border border-white/10 p-6">
-            <p
-              className="text-xs uppercase tracking-widest text-white/30 mb-2"
-             
-            >
-              Sounds Generated
-            </p>
-            <p className="text-xl font-display">{usage.sounds_generated.toLocaleString()}</p>
+          <div className="border border-white/10 p-5">
+            <p className="text-xs text-white/30 mb-2">Sounds generated</p>
+            <p className="text-lg">{usage.sounds_generated.toLocaleString()}</p>
             <p className="text-xs text-white/30 mt-1">
               {formatDuration(usage.total_duration_ms)} total
             </p>
           </div>
-          <div className="border border-white/10 p-6">
-            <p
-              className="text-xs uppercase tracking-widest text-white/30 mb-2"
-             
-            >
-              Invites Left
-            </p>
-            <p className="text-xl font-display">{member.invites_remaining}</p>
+          <div className="border border-white/10 p-5">
+            <p className="text-xs text-white/30 mb-2">Invites left</p>
+            <p className="text-lg">{member.invites_remaining}</p>
           </div>
         </div>
 
         {/* Invite Code */}
         {member.invite_code && (
-          <div className="border border-white/10 p-8 mb-8">
-            <p
-              className="text-xs uppercase tracking-widest text-white/30 mb-4"
-             
-            >
-              Your Invite Code
-            </p>
+          <div className="border border-white/10 p-6 mb-6">
+            <p className="text-xs text-white/30 mb-3">Your invite code</p>
             <div className="flex items-center gap-4">
-              <p className="font-mono text-2xl tracking-wider text-white/70">
+              <p className="font-mono text-xl tracking-wider text-white/70">
                 {member.invite_code}
               </p>
               <button
                 onClick={handleCopyInviteCode}
-                className="text-xs uppercase tracking-widest text-white/40 hover:text-white transition border border-white/20 px-3 py-1"
-               
+                className="text-xs text-white/40 hover:text-white transition border border-white/20 px-3 py-1"
               >
                 {copied ? "Copied" : "Copy"}
               </button>
             </div>
-            <p className="text-white/30 text-sm mt-4">
-              Share with colleagues. Referred members receive priority review.
+            <p className="text-white/30 text-xs mt-3">
+              Referred members receive priority review.
             </p>
           </div>
         )}
 
         {/* Membership Actions */}
-        <div className="border border-white/10 p-8 mb-16">
-          <p
-            className="text-xs uppercase tracking-widest text-white/30 mb-6"
-           
-          >
-            Membership
-          </p>
-
+        <div className="border border-white/10 p-6 mb-16">
           {member.membership_status === "active" && member.stripe_subscription_id ? (
             <div className="space-y-4">
-              <p className="text-white/50">
+              <p className="text-white/50 text-sm">
                 Manage your subscription, update payment method, or view invoices.
               </p>
               <button
                 onClick={handleManageBilling}
                 disabled={portalLoading}
-                className="border border-white/30 text-white py-3 px-6 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition disabled:opacity-50"
-               
+                className="border border-white/30 text-white py-2.5 px-5 text-sm tracking-wide hover:bg-white hover:text-black transition disabled:opacity-50"
               >
-                {portalLoading ? "..." : "Manage Billing"}
+                {portalLoading ? "..." : "Manage billing"}
               </button>
             </div>
           ) : member.membership_status === "pending" ? (
             <div className="space-y-4">
-              <p className="text-white/50">
+              <p className="text-white/50 text-sm">
                 Upgrade to unlock the full Swanblade studio.
               </p>
               <Link
                 href="/pricing"
-                className="inline-block border border-white/30 text-white py-3 px-6 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition"
-               
+                className="inline-block border border-white/30 text-white py-2.5 px-5 text-sm tracking-wide hover:bg-white hover:text-black transition"
               >
-                View Plans
+                View plans
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-white/50">
+              <p className="text-white/50 text-sm">
                 Your membership is {member.membership_status}. Reactivate to continue.
               </p>
               <Link
                 href="/pricing"
-                className="inline-block border border-white/30 text-white py-3 px-6 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition"
-               
+                className="inline-block border border-white/30 text-white py-2.5 px-5 text-sm tracking-wide hover:bg-white hover:text-black transition"
               >
                 Reactivate
               </Link>
             </div>
           )}
-        </div>
-
-        {/* Twin OS Connection */}
-        <div className="border border-white/10 p-8 mb-16">
-          <p
-            className="text-xs uppercase tracking-widest text-white/30 mb-6"
-           
-          >
-            Twin OS
-          </p>
-          <p className="text-white/50 mb-4">
-            Connect to Starforge to sync your Audio DNA and enhance sound generation with your personal taste profile.
-          </p>
-          <Link
-            href="/settings"
-            className="text-xs uppercase tracking-widest text-white/40 hover:text-white transition"
-           
-          >
-            Configure in Settings
-          </Link>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center border-t border-white/5 pt-16">
-          <p
-            className="text-xs uppercase tracking-widest text-white/20 mb-2"
-           
-          >
-            Diamonds or Silence
-          </p>
-          <p className="font-display text-xl text-white/40 italic">Swanblade</p>
         </div>
       </main>
     </div>

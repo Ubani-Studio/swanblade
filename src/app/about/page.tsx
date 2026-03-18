@@ -6,15 +6,9 @@ export default function AboutPage() {
   return (
     <MarketingLayout>
       {/* Hero */}
-      <section className="py-32 px-6">
+      <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto">
-          <p
-            className="text-xs uppercase tracking-[0.3em] text-white/30 mb-6"
-           
-          >
-            Philosophy
-          </p>
-          <h1 className="text-4xl font-display mb-8">
+          <h1 className="text-4xl font-display font-light mb-8">
             Only what cuts through.
           </h1>
           <p className="text-white/50 leading-relaxed">
@@ -29,24 +23,24 @@ export default function AboutPage() {
       <section className="py-16 px-6 border-t border-white/10">
         <div className="max-w-2xl mx-auto space-y-12">
           <div>
-            <h2 className="text-xl font-display mb-4">Diamonds or nothing</h2>
-            <p className="text-white/50">
+            <h2 className="text-base text-white mb-4">Diamonds or nothing</h2>
+            <p className="text-white/50 text-sm">
               If it&apos;s not ready for broadcast, it doesn&apos;t leave. We don&apos;t do
               &quot;interesting experiments.&quot; We do audio that belongs in the final cut,
               first try, every time.
             </p>
           </div>
           <div>
-            <h2 className="text-xl font-display mb-4">Your sound. Finally.</h2>
-            <p className="text-white/50">
+            <h2 className="text-base text-white mb-4">Your sound. Finally.</h2>
+            <p className="text-white/50 text-sm">
               You&apos;ve spent years compromising. Settling for close enough. Swanblade
               is the sound you&apos;ve always heard in your head, finally real.
               The search is over.
             </p>
           </div>
           <div>
-            <h2 className="text-xl font-display mb-4">Not for everyone</h2>
-            <p className="text-white/50">
+            <h2 className="text-base text-white mb-4">Not for everyone</h2>
+            <p className="text-white/50 text-sm">
               We charge what we&apos;re worth. We build for people who know what they want.
               If that&apos;s not you, there are cheaper options. We won&apos;t be offended.
             </p>
@@ -55,20 +49,14 @@ export default function AboutPage() {
       </section>
 
       {/* Contact */}
-      <section className="py-32 px-6 border-t border-white/10">
+      <section className="py-24 px-6 border-t border-white/10">
         <div className="max-w-2xl mx-auto">
-          <p
-            className="text-xs uppercase tracking-[0.3em] text-white/30 mb-6"
-           
-          >
-            Contact
-          </p>
-          <p className="text-white/50 mb-4">
+          <p className="text-white/50 text-sm mb-4">
             For enterprise inquiries and partnerships:
           </p>
           <a
             href="mailto:studio@swanblade.com"
-            className="text-white hover:text-[#66023C] transition font-display text-xl"
+            className="text-white hover:text-white/60 transition text-lg"
           >
             studio@swanblade.com
           </a>

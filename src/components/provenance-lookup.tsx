@@ -52,7 +52,7 @@ export function ProvenanceLookup({ className, onResult }: ProvenanceLookupProps)
   };
 
   return (
-    <div className={cn("border border-[#1a1a1a] bg-[#0a0a0a]", className)}>
+    <div className={cn("border border-[#1a1a1a] bg-black", className)}>
       <div className="px-4 py-3 border-b border-[#1a1a1a]">
         <p className="text-sm font-medium text-gray-400">
           Verify Provenance

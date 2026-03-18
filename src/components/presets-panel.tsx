@@ -87,7 +87,7 @@ export function PresetsPanel({
                   onChange={(e) => setNewPresetName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSave()}
                   placeholder="Preset name..."
-                  className="flex-1 px-3 py-2 border border-[#1a1a1a] bg-[#0a0a0a] text-body text-white placeholder:text-gray-500 focus:outline-none focus:border-white"
+                  className="flex-1 px-3 py-2 border border-[#1a1a1a] bg-black text-body text-white placeholder:text-gray-500 focus:outline-none focus:border-white"
                   autoFocus
                 />
                 <Button

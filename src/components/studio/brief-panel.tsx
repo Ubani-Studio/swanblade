@@ -34,7 +34,7 @@ export function BriefPanel({
   disabled?: boolean;
 }) {
   return (
-    <div className="bg-[#0a0a0a] border border-white/[0.06] p-5">
+    <div className="bg-black border border-white/[0.06] p-5">
       <p className="text-sm font-medium text-gray-400">Brief</p>
 
       <div className="mt-3 flex gap-1.5">

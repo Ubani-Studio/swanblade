@@ -13,7 +13,7 @@ interface PromptComposerProps {
 
 export function PromptComposer({ value, onChange, onSubmit, suggestions, isGenerating }: PromptComposerProps) {
   return (
-    <div className="border border-[#1a1a1a] bg-[#0a0a0a] p-6">
+    <div className="border border-[#1a1a1a] bg-black p-6">
       <p className="text-sm font-medium text-gray-400">Prompt Composer</p>
       <Textarea
         rows={3}

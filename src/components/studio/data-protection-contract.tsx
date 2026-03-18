@@ -26,7 +26,7 @@ export function DataProtectionContract({
       onClick={onCancel}
     >
       <div
-        className="bg-[#0a0a0a] border border-white/[0.06] p-8 max-w-lg w-full mx-4"
+        className="bg-black border border-white/[0.06] p-8 max-w-lg w-full mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-6">

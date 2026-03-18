@@ -17,7 +17,7 @@ interface SoundDetailPanelProps {
 export function SoundDetailPanel({ sound, onRegenerate, onVariation, onDownload, onCopyPreset }: SoundDetailPanelProps) {
   if (!sound) {
     return (
-      <div className="flex h-full flex-col items-center justify-center border border-dashed border-[#1a1a1a] bg-[#0a0a0a] p-12 text-center">
+      <div className="flex h-full flex-col items-center justify-center border border-dashed border-[#1a1a1a] bg-black p-12 text-center">
         <p className="font-display text-display-lg text-white">Swanblade is idle.</p>
         <p className="mt-3 max-w-md text-body text-gray-500">
           Describe a sound using the composer below to generate audio mockups.
@@ -29,7 +29,7 @@ export function SoundDetailPanel({ sound, onRegenerate, onVariation, onDownload,
   const disabled = sound.status !== "ready";
 
   return (
-    <div className="flex h-full flex-col gap-6 border border-[#1a1a1a] bg-[#0a0a0a] p-8">
+    <div className="flex h-full flex-col gap-6 border border-[#1a1a1a] bg-black p-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm text-gray-400">{sound.type}</p>
@@ -44,7 +44,7 @@ export function SoundDetailPanel({ sound, onRegenerate, onVariation, onDownload,
       <AudioPlayerControls audioUrl={sound.audioUrl} disabled={disabled} />
 
       {sound.status === "error" && (
-        <div className="border border-red-400 bg-[#0a0a0a] px-4 py-3 text-body text-red-400">
+        <div className="border border-red-400 bg-black px-4 py-3 text-body text-red-400">
           {sound.errorMessage ?? "Generation failed. Try again with a different prompt or parameters."}
         </div>
       )}

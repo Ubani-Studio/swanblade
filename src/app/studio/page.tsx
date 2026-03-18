@@ -464,7 +464,7 @@ export default function Home() {
           <input
             type="text"
             placeholder="Search sounds..."
-            className="w-full h-10 pl-10 pr-4 bg-[#0a0a0a] border border-white/[0.06] text-white text-sm font-light placeholder:text-gray-500 focus:outline-none focus:border-white/[0.12] transition-all duration-200"
+            className="w-full h-10 pl-10 pr-4 bg-black border border-white/[0.06] text-white text-sm font-light placeholder:text-gray-500 focus:outline-none focus:border-white/[0.12] transition-all duration-200"
           />
         </div>
         <div className="ml-auto flex items-center gap-4">
@@ -537,7 +537,7 @@ export default function Home() {
                   onSelect={handleLoadPreset}
                   onSave={handleSavePreset}
                   onDelete={deletePreset}
-                  className="bg-[#0a0a0a] border border-white/[0.06]"
+                  className="bg-black border border-white/[0.06]"
                 />
 
                 <ReferencePanel
@@ -573,11 +573,11 @@ export default function Home() {
 
                 <O8IdentityPanel
                   onIdentityChange={handleIdentityChange}
-                  className="bg-[#0a0a0a] border border-white/[0.06]"
+                  className="bg-black border border-white/[0.06]"
                 />
 
                 {/* Parameters */}
-                <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+                <div className="bg-black border border-white/[0.06] p-6">
                   <p className="text-sm font-medium text-gray-400">Parameters</p>
 
                   <div className="mt-4">
@@ -734,7 +734,7 @@ export default function Home() {
           onClick={() => setShowShortcuts(false)}
         >
           <div
-            className="bg-[#0a0a0a] border border-white/[0.06] p-6 max-w-md w-full mx-4"
+            className="bg-black border border-white/[0.06] p-6 max-w-md w-full mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
@@ -815,10 +815,10 @@ function GameAudioView({
         <div className="space-y-6">
           <O8IdentityPanel
             onIdentityChange={onIdentityChange}
-            className="bg-[#0a0a0a] border border-white/[0.06]"
+            className="bg-black border border-white/[0.06]"
           />
 
-          <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+          <div className="bg-black border border-white/[0.06] p-6">
             <p className="text-sm font-medium text-gray-400">Game State</p>
             <p className="mt-2 text-body-sm font-light text-gray-500">
               Generate coherent stem bundles for specific game contexts.
@@ -828,7 +828,7 @@ function GameAudioView({
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+          <div className="bg-black border border-white/[0.06] p-6">
             <p className="text-sm font-medium text-gray-400">Sound Palette</p>
             <p className="mt-2 text-body-sm font-light text-gray-500">
               Constrain generation to a consistent aesthetic.
@@ -838,7 +838,7 @@ function GameAudioView({
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+          <div className="bg-black border border-white/[0.06] p-6">
             <p className="text-sm font-medium text-gray-400">Parameters</p>
 
             <div className="mt-4">
@@ -898,7 +898,7 @@ function GameAudioView({
         </div>
 
         {/* Right: Result */}
-        <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+        <div className="bg-black border border-white/[0.06] p-6">
           <p className="text-sm font-medium text-gray-400">Output</p>
 
           {currentBundle ? (

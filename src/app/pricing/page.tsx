@@ -76,7 +76,7 @@ function formatPrice(priceUSD: number | null, currency: Currency): string {
 export default function PricingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <p className="text-white/40">Loading...</p>
       </div>
     }>

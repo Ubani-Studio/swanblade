@@ -59,7 +59,7 @@ function ClipCard({
   dataProtected?: boolean;
 }) {
   return (
-    <div className="border border-white/[0.06] bg-[#0a0a0a] p-4">
+    <div className="border border-white/[0.06] bg-black p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {dataProtected && (
@@ -211,7 +211,7 @@ export function ReferencePanel({
   const openPicker = () => fileInputRef.current?.click();
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+    <div className="bg-black border border-white/[0.06] p-6">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-400">Audio References</p>
         {clips.length > 0 && (

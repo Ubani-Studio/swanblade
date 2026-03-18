@@ -209,7 +209,7 @@ export function PaletteEditor({ value, onChange, onCreateFromDNA }: PaletteEdito
                   placeholder="Palette name..."
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
-                  className="flex-1 border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-1.5 text-body text-white placeholder:text-gray-500 focus:border-white focus:outline-none"
+                  className="flex-1 border border-[#1a1a1a] bg-black px-3 py-1.5 text-body text-white placeholder:text-gray-500 focus:border-white focus:outline-none"
                 />
                 <button
                   onClick={savePalette}

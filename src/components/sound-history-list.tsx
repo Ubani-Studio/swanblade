@@ -13,7 +13,7 @@ interface SoundHistoryListProps {
 export function SoundHistoryList({ items, selectedId, onSelect }: SoundHistoryListProps) {
   if (!items.length) {
     return (
-      <div className="flex h-full flex-col items-center justify-center border border-dashed border-[#1a1a1a] bg-[#0a0a0a] p-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center border border-dashed border-[#1a1a1a] bg-black p-6 text-center">
         <p className="text-body text-gray-500">Describe a sound and I&apos;ll design it.</p>
         <p className="mt-2 text-body-sm text-gray-500/60">Your sound history will live here.</p>
       </div>

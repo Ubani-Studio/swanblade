@@ -423,7 +423,7 @@ export function LibraryPanel() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortBy)}
-            className="border border-white/[0.06] bg-[#0a0a0a] px-3 py-1.5 text-body text-gray-500"
+            className="border border-white/[0.06] bg-black px-3 py-1.5 text-body text-gray-500"
           >
             <option value="date">Newest First</option>
             <option value="name">Name A-Z</option>
@@ -457,7 +457,7 @@ export function LibraryPanel() {
                 setSelectedGroup(e.target.value);
                 setFilterBy("group");
               }}
-              className="border border-white/[0.06] bg-[#0a0a0a] px-3 py-1.5 text-body text-gray-500"
+              className="border border-white/[0.06] bg-black px-3 py-1.5 text-body text-gray-500"
             >
               <option value="">All Groups</option>
               {groups.map((group) => (
@@ -490,7 +490,7 @@ export function LibraryPanel() {
           <div
             key={sound.id}
             className={cn(
-              "border border-white/[0.06] bg-[#0a0a0a] transition",
+              "border border-white/[0.06] bg-black transition",
               playingId === sound.id && "border-white"
             )}
           >

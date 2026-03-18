@@ -68,7 +68,7 @@ export function LoraSelector({ value, onChange }: LoraSelectorProps) {
   };
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/[0.06] p-6">
+    <div className="bg-black border border-white/[0.06] p-6">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-400">Sound World</p>
         {value && (
@@ -122,7 +122,7 @@ export function LoraSelector({ value, onChange }: LoraSelectorProps) {
 
           {/* Dropdown */}
           {expanded && (
-            <div className="absolute top-full left-0 right-0 mt-1 border border-white/[0.06] bg-[#0a0a0a] z-10 max-h-60 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 border border-white/[0.06] bg-black z-10 max-h-60 overflow-y-auto">
               {/* None option */}
               <button
                 onClick={() => handleSelect(null)}

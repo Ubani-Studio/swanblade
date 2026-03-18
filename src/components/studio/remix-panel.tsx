@@ -122,7 +122,7 @@ export function RemixPanel({
   const openPicker = () => fileInputRef.current?.click();
 
   return (
-    <div className="bg-[#0a0a0a] border border-white/[0.06] p-5">
+    <div className="bg-black border border-white/[0.06] p-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-gray-400">Sculpt</p>

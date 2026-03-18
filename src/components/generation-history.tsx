@@ -27,7 +27,7 @@ export function GenerationHistory({
   }
 
   return (
-    <div className={cn("border border-[#1a1a1a] bg-[#0a0a0a]", className)}>
+    <div className={cn("border border-[#1a1a1a] bg-black", className)}>
       <div
         className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-black transition-colors"
         onClick={() => setExpanded(!expanded)}
