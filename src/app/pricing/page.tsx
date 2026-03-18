@@ -147,7 +147,7 @@ function PricingContent() {
       {/* Hero */}
       <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-display font-light mb-12">
+          <h1 className="text-4xl font-display font-light mb-12">
             Membership
           </h1>
 

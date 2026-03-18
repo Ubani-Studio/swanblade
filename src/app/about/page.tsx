@@ -8,7 +8,7 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-display font-light mb-8">
+          <h1 className="text-4xl font-display font-light mb-8">
             Only what cuts through.
           </h1>
           <p className="text-white/50 leading-relaxed">

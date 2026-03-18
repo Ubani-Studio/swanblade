@@ -234,7 +234,7 @@ function MemberPageContent() {
       {/* Member Info */}
       <main className="max-w-3xl mx-auto px-6 py-16">
         <div className="mb-16">
-          <h1 className="text-3xl font-display font-light">{member.name}</h1>
+          <h1 className="text-4xl font-display font-light">{member.name}</h1>
           <p className="text-white/40 text-sm mt-1">
             {member.email}
           </p>
