@@ -35,29 +35,25 @@ export function Frame2147241533({ className, children }: Frame2147241533Props) {
           <nav className="flex items-center gap-10">
             <Link
               href="/features"
-              className="text-white/40 hover:text-white text-xs uppercase tracking-widest transition"
-             
+              className="text-white/40 hover:text-white text-sm tracking-wide transition"
             >
               Features
             </Link>
             <Link
               href="/pricing"
-              className="text-white/40 hover:text-white text-xs uppercase tracking-widest transition"
-             
+              className="text-white/40 hover:text-white text-sm tracking-wide transition"
             >
               Pricing
             </Link>
             <Link
               href="/about"
-              className="text-white/40 hover:text-white text-xs uppercase tracking-widest transition"
-             
+              className="text-white/40 hover:text-white text-sm tracking-wide transition"
             >
               About
             </Link>
             <Link
               href="/apply"
-              className="border border-white/30 text-white px-5 py-2 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition"
-             
+              className="shrink-0 border border-white/30 text-white px-5 py-2 text-sm tracking-wide hover:bg-white hover:text-black transition"
             >
               Join
             </Link>
@@ -68,7 +64,7 @@ export function Frame2147241533({ className, children }: Frame2147241533Props) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-8">
         <div className="text-center max-w-2xl pointer-events-auto">
-          <h1 className="text-6xl md:text-7xl text-white leading-tight mb-8 font-display tracking-tight">
+          <h1 className="text-6xl md:text-7xl text-white leading-tight mb-8 font-display font-light tracking-tight">
             Swanblade
           </h1>
           <button
@@ -79,7 +75,7 @@ export function Frame2147241533({ className, children }: Frame2147241533Props) {
           </button>
           <Link
             href="/apply"
-            className="inline-block border border-white/30 text-white px-8 py-4 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition"
+            className="inline-block border border-white/30 text-white px-8 py-4 text-sm tracking-wide hover:bg-white hover:text-black transition"
            
           >
             Apply
@@ -91,7 +87,7 @@ export function Frame2147241533({ className, children }: Frame2147241533Props) {
       {/* Footer */}
       <footer className="pointer-events-auto px-8 py-6">
         <p
-          className="text-center text-xs text-white/20 uppercase tracking-widest"
+          className="text-center text-xs text-white/20 tracking-wide"
          
         >
           Not for everyone

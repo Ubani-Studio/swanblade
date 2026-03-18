@@ -145,22 +145,11 @@ function PricingContent() {
       )}
 
       {/* Hero */}
-      <section className="py-32 px-6">
+      <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto">
-          <p
-            className="text-xs uppercase tracking-[0.3em] text-white/30 mb-6"
-           
-          >
+          <h1 className="text-4xl font-display font-light mb-12">
             Membership
-          </p>
-          <h1 className="text-4xl font-display mb-8">
-            Diamonds or Silence
           </h1>
-          <p className="text-white/50 leading-relaxed mb-8">
-            No free tier. No trials. If you need to &quot;try before you buy,&quot;
-            this probably isn&apos;t for you. Swanblade is for people who already
-            know what they want.
-          </p>
 
           {/* Toggles */}
           <div className="flex flex-wrap gap-4">
@@ -168,23 +157,21 @@ function PricingContent() {
             <div className="inline-flex border border-white/10">
               <button
                 onClick={() => setBilling("monthly")}
-                className={`px-4 py-2 text-xs uppercase tracking-widest transition ${
+                className={`px-4 py-2 text-xs tracking-wide transition ${
                   billing === "monthly"
                     ? "bg-white/10 text-white"
                     : "text-white/30 hover:text-white"
                 }`}
-               
               >
                 Monthly
               </button>
               <button
                 onClick={() => setBilling("annual")}
-                className={`px-4 py-2 text-xs uppercase tracking-widest transition ${
+                className={`px-4 py-2 text-xs tracking-wide transition ${
                   billing === "annual"
                     ? "bg-white/10 text-white"
                     : "text-white/30 hover:text-white"
                 }`}
-               
               >
                 Annual
               </button>
@@ -196,12 +183,11 @@ function PricingContent() {
                 <button
                   key={c}
                   onClick={() => setCurrency(c)}
-                  className={`px-4 py-2 text-xs uppercase tracking-widest transition ${
+                  className={`px-4 py-2 text-xs tracking-wide transition ${
                     currency === c
                       ? "bg-white/10 text-white"
                       : "text-white/30 hover:text-white"
                   }`}
-                 
                 >
                   {c}
                 </button>
@@ -212,8 +198,8 @@ function PricingContent() {
       </section>
 
       {/* Plans */}
-      <section className="py-16 px-6 border-t border-white/10">
-        <div className="max-w-2xl mx-auto space-y-6">
+      <section className="py-12 px-6 border-t border-white/10">
+        <div className="max-w-2xl mx-auto space-y-4">
           {PLANS.map((plan) => {
             const price = billing === "annual" ? plan.annualUSD : plan.monthlyUSD;
             const isLoading = loading === plan.id;
@@ -221,95 +207,80 @@ function PricingContent() {
             return (
               <div
                 key={plan.name}
-                className={`p-8 border ${
+                className={`p-6 border ${
                   plan.highlighted
                     ? "border-[#66023C]"
                     : "border-white/10"
                 }`}
               >
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-display">{plan.name}</h2>
-                    <p className="text-white/40 text-sm mt-1">
+                    <h2 className="text-base font-display">{plan.name}</h2>
+                    <p className="text-white/40 text-xs mt-0.5">
                       {plan.description}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <span className="text-3xl font-display">
+                  <div className="text-right shrink-0 ml-4">
+                    <span className="text-2xl font-display font-light">
                       {formatPrice(price, currency)}
                     </span>
                     {price && (
-                      <span className="text-white/30 text-sm ml-1">
-                        /{billing === "annual" ? "year" : "month"}
+                      <span className="text-white/30 text-xs ml-1">
+                        /{billing === "annual" ? "yr" : "mo"}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Features */}
-                <ul className="space-y-2 mb-6">
-                  {plan.features.map((feature, i) => (
-                    <li
-                      key={i}
-                      className="text-white/50 text-sm flex items-center gap-2"
-                     
-                    >
-                      <span className="text-white/20">-</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+                <div className="flex items-end justify-between gap-6">
+                  {/* Features */}
+                  <ul className="flex flex-wrap gap-x-4 gap-y-1">
+                    {plan.features.map((feature, i) => (
+                      <li
+                        key={i}
+                        className="text-white/40 text-xs"
+                      >
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
 
-                {/* CTA */}
-                <button
-                  onClick={() => handleSubscribe(plan.id)}
-                  disabled={isLoading}
-                  className={`w-full border py-3 text-xs uppercase tracking-widest transition disabled:opacity-50 ${
-                    plan.highlighted
-                      ? "border-[#66023C] text-white hover:bg-[#66023C]"
-                      : "border-white/30 text-white hover:bg-white hover:text-black"
-                  }`}
-                 
-                >
-                  {isLoading
-                    ? "..."
-                    : plan.id === "enterprise"
-                    ? "Contact Us"
-                    : "Subscribe"}
-                </button>
+                  {/* CTA */}
+                  <button
+                    onClick={() => handleSubscribe(plan.id)}
+                    disabled={isLoading}
+                    className={`shrink-0 border px-6 py-2 text-xs tracking-wide transition disabled:opacity-50 ${
+                      plan.highlighted
+                        ? "border-[#66023C] text-white hover:bg-[#66023C]"
+                        : "border-white/30 text-white hover:bg-white hover:text-black"
+                    }`}
+                  >
+                    {isLoading
+                      ? "..."
+                      : plan.id === "enterprise"
+                      ? "Contact"
+                      : "Subscribe"}
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* Annual savings note */}
         {billing === "annual" && (
-          <div className="max-w-2xl mx-auto mt-6">
-            <p className="text-white/30 text-sm">
-              Annual membership includes two months.
+          <div className="max-w-2xl mx-auto mt-4">
+            <p className="text-white/30 text-xs">
+              Annual includes two months free.
             </p>
           </div>
         )}
       </section>
 
       {/* Footer */}
-      <section className="py-32 px-6 border-t border-white/10">
+      <section className="py-20 px-6 border-t border-white/10">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="border border-white/10 p-6 mb-8 inline-block">
-            <p
-              className="text-xs uppercase tracking-widest text-white/30 mb-1 font-mono"
-            >
-              Q1 2026
-            </p>
-            <p className="text-white/70">
-              <span className="text-white font-display text-2xl">12</span> seats remaining
-            </p>
-          </div>
-          <p
-            className="text-xs uppercase tracking-widest text-white/20 mt-8"
-           
-          >
-            Not for everyone
+          <p className="text-white/50 text-sm">
+            <span className="text-white font-display font-light text-xl">12</span> seats remaining
           </p>
         </div>
       </section>

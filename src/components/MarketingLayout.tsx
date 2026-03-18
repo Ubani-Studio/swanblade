@@ -31,19 +31,19 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-xs uppercase tracking-widest transition ${
+                className={`text-sm tracking-wide transition ${
                   pathname === link.href
                     ? "text-white"
                     : "text-white/40 hover:text-white"
                 }`}
-               
               >
                 {link.label}
               </Link>
             ))}
             <Link
               href="/apply"
-              className="border border-white/30 text-white px-5 py-2 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition"            >
+              className="shrink-0 border border-white/30 text-white px-5 py-2 text-sm tracking-wide hover:bg-white hover:text-black transition"
+            >
               Join
             </Link>
           </nav>
@@ -56,16 +56,17 @@ export function MarketingLayout({ children }: MarketingLayoutProps) {
       {/* Footer */}
       <footer className="border-t border-white/5 py-12 px-6">
         <div className="max-w-3xl mx-auto flex flex-col items-center gap-4">
-          <span className="text-xs text-white/30 uppercase tracking-widest">
+          <span className="text-xs text-white/30 tracking-wide">
             Not for everyone
           </span>
           <div className="flex items-center gap-8">
-            <span className="text-xs text-white/20 uppercase tracking-widest">
+            <span className="text-xs text-white/20 tracking-wide">
               &copy; {new Date().getFullYear()} Swanblade
             </span>
             <a
               href="mailto:studio@swanblade.com"
-              className="text-xs text-white/20 uppercase tracking-widest hover:text-white transition"            >
+              className="text-xs text-white/20 tracking-wide hover:text-white transition"
+            >
               studio@swanblade.com
             </a>
           </div>
