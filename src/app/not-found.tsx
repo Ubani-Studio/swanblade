@@ -7,7 +7,7 @@ export default function NotFound() {
         <p className="font-mono text-xs text-white/20 mb-8">
           404
         </p>
-        <h1 className="text-2xl font-display font-light mb-4">Nothing here.</h1>
+        <h1 className="text-3xl font-display font-light mb-4">Nothing here.</h1>
         <p className="text-white/40 mb-12">
           The path you followed doesn&apos;t lead anywhere.
         </p>

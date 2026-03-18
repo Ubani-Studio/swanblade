@@ -99,14 +99,14 @@ function LoginForm() {
       <div className="w-full max-w-xs mx-auto">
         {/* Logo */}
         <Link href="/" className="block mb-16">
-          <span className="text-xl font-display font-light text-white">
+          <span className="text-2xl font-display font-light text-white">
             Swanblade
           </span>
         </Link>
 
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-xl font-display font-light text-white">
+          <h1 className="text-2xl font-display font-light text-white">
             {mode === "login" ? "Sign in" : "Create account"}
           </h1>
         </div>

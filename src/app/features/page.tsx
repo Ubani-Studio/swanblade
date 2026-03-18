@@ -9,7 +9,7 @@ export default function FeaturesPage() {
       {/* Hero */}
       <section className="py-24 px-6">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-display font-light mb-8">
+          <h1 className="text-3xl font-display font-light mb-8">
             Your sound. Finally.
           </h1>
           <p className="text-white/50 leading-relaxed">

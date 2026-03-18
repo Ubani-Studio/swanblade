@@ -24,7 +24,7 @@ export default function ApplyPage() {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
         <div className="max-w-md text-center">
-          <h1 className="text-2xl font-display font-light mb-6">We&apos;ll be in touch.</h1>
+          <h1 className="text-3xl font-display font-light mb-6">We&apos;ll be in touch.</h1>
           <p className="text-white/50 text-sm mb-8">
             We review applications weekly. If it&apos;s a fit,
             you&apos;ll hear from us with next steps.
@@ -51,7 +51,7 @@ export default function ApplyPage() {
 
       {/* Form */}
       <main className="max-w-lg mx-auto px-6 py-16">
-        <h1 className="text-2xl font-display font-light mb-4">Apply</h1>
+        <h1 className="text-3xl font-display font-light mb-4">Apply</h1>
         <p className="text-white/50 text-sm mb-12">
           Tell us what you&apos;re working on and why Swanblade belongs in your workflow.
         </p>

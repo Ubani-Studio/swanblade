@@ -70,7 +70,7 @@ export function Frame2147241533({ className, children }: Frame2147241533Props) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-8">
         <div className="text-center max-w-2xl pointer-events-auto">
-          <h1 className="text-3xl text-white leading-tight mb-6 font-display font-light tracking-tight">
+          <h1 className="text-4xl text-white leading-tight mb-6 font-display font-light tracking-tight">
             Swanblade
           </h1>
           <button
