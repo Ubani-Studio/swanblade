@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from "react";
 import { uuid } from "@/lib/utils";
 import type { SoundCategory, GameState } from "@/types";
 import type { SoundPalette } from "@/lib/soundPalette";
-import type { ProviderId } from "@/components/provider-selector";
 import type { RemixEngineId, StereoMode, VampnetMode, TransplantCodebooks } from "@/components/studio/remix-panel";
 
 const STORAGE_KEY = "swanblade-presets";
@@ -15,7 +14,6 @@ export interface GenerationPreset {
   name: string;
   createdAt: string;
   prompt: string;
-  provider: ProviderId;
   lengthSeconds: number;
   palette?: SoundPalette | null;
   gameState?: GameState | null;
@@ -93,31 +91,37 @@ function saveChains(chains: ChainRecipe[]) {
 // Default presets to start with
 const DEFAULT_PRESETS: GenerationPreset[] = [
   {
-    id: "default-ambient",
-    name: "Ambient Atmosphere",
+    id: "default-texture",
+    name: "Texture Pass",
     createdAt: new Date().toISOString(),
     prompt: "Gentle ambient atmosphere with soft pads and subtle textures",
-    provider: "replicate",
     lengthSeconds: 30,
-    gameState: "exploration",
+    engine: "vampnet",
+    periodicPrompt: 3,
+    upperCodebookMask: 5,
+    temperature: 0.8,
   },
   {
-    id: "default-combat",
-    name: "Intense Combat",
+    id: "default-sculpt",
+    name: "Deep Sculpt",
     createdAt: new Date().toISOString(),
-    prompt: "Aggressive percussion with driving bass and intense energy",
-    provider: "replicate",
+    prompt: "Aggressive transformation with bold character",
     lengthSeconds: 15,
-    gameState: "combat",
+    engine: "vampnet",
+    periodicPrompt: 4,
+    upperCodebookMask: 2,
+    temperature: 1.0,
   },
   {
-    id: "default-ui",
-    name: "UI Sounds",
+    id: "default-radical",
+    name: "Radical Reimagine",
     createdAt: new Date().toISOString(),
-    prompt: "Clean digital UI click sounds, modern and minimal",
-    provider: "elevenlabs",
-    lengthSeconds: 5,
-    type: "FX",
+    prompt: "Wild, unpredictable reimagining",
+    lengthSeconds: 10,
+    engine: "vampnet",
+    periodicPrompt: 3,
+    upperCodebookMask: 1,
+    temperature: 1.3,
   },
 ];
 

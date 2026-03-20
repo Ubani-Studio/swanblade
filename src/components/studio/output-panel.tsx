@@ -8,14 +8,12 @@ import { StemExportPanel } from "@/components/stem-export-panel";
 import { HistoryControls, GenerationHistory } from "@/components/generation-history";
 import { SpectrogramComparison } from "@/components/spectrogram";
 import type { SoundGeneration } from "@/types";
-import type { ProviderId } from "@/components/provider-selector";
 import type { O8Identity, O8Provenance } from "@/lib/o8/types";
 import type { GenerationHistoryEntry } from "@/hooks/useGenerationHistory";
 
 export function OutputPanel({
   currentSound,
   isGenerating,
-  selectedProvider,
   o8Identity,
   currentProvenance,
   onProvenanceStamped,
@@ -37,7 +35,6 @@ export function OutputPanel({
 }: {
   currentSound: SoundGeneration | null;
   isGenerating: boolean;
-  selectedProvider: ProviderId;
   o8Identity: O8Identity | null;
   currentProvenance: O8Provenance | null;
   onProvenanceStamped: (provenance: O8Provenance) => void;
@@ -180,9 +177,8 @@ export function OutputPanel({
                         parameters={{
                           lengthSeconds: currentSound.lengthSeconds,
                           type: currentSound.type,
-                          provider: selectedProvider,
                         }}
-                        provider={selectedProvider}
+                        provider={currentSound.remixEngine ?? "swanblade"}
                         onStamped={(result) => {
                           onProvenanceStamped({
                             identity_id: o8Identity?.identity_id ?? "anonymous",

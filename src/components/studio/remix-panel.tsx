@@ -10,7 +10,7 @@ export interface RemixFile {
   previewUrl: string;
 }
 
-const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const MAX_FILE_BYTES = 100 * 1024 * 1024;
 
 function formatBytes(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "unknown";
@@ -150,7 +150,7 @@ export function RemixPanel({
         return;
       }
       if (f.size > MAX_FILE_BYTES) {
-        onToast("File exceeds 25 MB limit.", "error");
+        onToast("File exceeds 100 MB limit.", "error");
         return;
       }
       const previewUrl = URL.createObjectURL(f);
@@ -252,7 +252,7 @@ export function RemixPanel({
               <p className={`text-sm font-light ${isDragging ? "text-white" : "text-gray-500 group-hover:text-gray-300"}`}>
                 {isDragging ? "Drop to sculpt" : "Drop audio to sculpt"}
               </p>
-              <p className="text-[10px] text-gray-600">25 MB</p>
+              <p className="text-[10px] text-gray-600">100 MB</p>
             </div>
           </div>
         </div>
@@ -343,7 +343,7 @@ export function RemixPanel({
                     return;
                   }
                   if (f.size > MAX_FILE_BYTES) {
-                    onToast("File exceeds 25 MB limit.", "error");
+                    onToast("File exceeds 100 MB limit.", "error");
                     return;
                   }
                   const previewUrl = URL.createObjectURL(f);
@@ -693,7 +693,7 @@ export function RemixPanel({
                   return;
                 }
                 if (f.size > MAX_FILE_BYTES) {
-                  onToast("File exceeds 25 MB limit.", "error");
+                  onToast("File exceeds 100 MB limit.", "error");
                   return;
                 }
                 const previewUrl = URL.createObjectURL(f);

@@ -3,17 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ToastItem, ToastStack } from "@/components/toast-stack";
 import { LibraryPanel } from "@/components/library-panel";
-import { ProviderSelector, type ProviderId, recommendProvider } from "@/components/provider-selector";
 import { PaletteEditor } from "@/components/PaletteEditor";
 import { GameStateSelector } from "@/components/GameStateSelector";
 import { O8IdentityPanel } from "@/components/o8-identity-panel";
-type BriefMode = "sound" | "song" | "stem" | "catalog" | "album";
-import { ReferencePanel, type ReferenceClip, readFileAsBase64 } from "@/components/studio/reference-panel";
 import { OutputPanel } from "@/components/studio/output-panel";
-import type { AudioReferencePayload, SoundGeneration, SoundCategory, GameState } from "@/types";
+import type { SoundGeneration, SoundCategory, GameState } from "@/types";
 import { uuid, generateSoundName } from "@/lib/utils";
 import type { SoundPalette } from "@/lib/soundPalette";
-import type { StemBundle } from "@/lib/stemGenerator";
 import type { O8Identity, O8Provenance } from "@/lib/o8/types";
 import { useKeyboardShortcuts, getShortcutsList } from "@/hooks/useKeyboardShortcuts";
 import { useTheme } from "@/hooks/useTheme";
@@ -26,7 +22,7 @@ import { LoraSelector, type LoraSelection } from "@/components/studio/lora-selec
 import { RemixPanel, type RemixFile, type RemixEngineId, type StereoMode, type VampnetMode, type TransplantCodebooks } from "@/components/studio/remix-panel";
 import { useSessionPersistence, type SessionSettings } from "@/hooks/useSessionPersistence";
 
-type AppMode = "generate" | "game-audio" | "library" | "training";
+type AppMode = "generate" | "library" | "training";
 
 const DEFAULT_PARAMETERS = {
   type: "FX" as SoundCategory,
@@ -45,16 +41,11 @@ const LENGTH_PRESETS = [5, 12, 30, 60];
 
 export default function Home() {
   const [mode, setMode] = useState<AppMode>("generate");
-  const [briefMode, setBriefMode] = useState<BriefMode>("sound");
   const [prompt, setPrompt] = useState("");
   const [currentSound, setCurrentSound] = useState<SoundGeneration | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<ProviderId>("replicate");
   const [lengthSeconds, setLengthSeconds] = useState(DEFAULT_PARAMETERS.lengthSeconds);
-  const [providerPinned, setProviderPinned] = useState(false);
-  const [referenceClips, setReferenceClips] = useState<ReferenceClip[]>([]);
-  const [dataProtected, setDataProtected] = useState(true);
   const [selectedLora, setSelectedLora] = useState<LoraSelection | null>(null);
   const [remixFile, setRemixFile] = useState<RemixFile | null>(null);
   const [remixStrength, setRemixStrength] = useState(0.5);
@@ -147,7 +138,6 @@ export default function Home() {
   // Blue Ocean state
   const [selectedPalette, setSelectedPalette] = useState<SoundPalette | null>(null);
   const [selectedGameState, setSelectedGameState] = useState<GameState | null>(null);
-  const [currentBundle, setCurrentBundle] = useState<StemBundle | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // o8 Identity state
@@ -202,7 +192,6 @@ export default function Home() {
     savePreset({
       name,
       prompt,
-      provider: selectedProvider,
       lengthSeconds,
       palette: selectedPalette,
       gameState: selectedGameState,
@@ -227,11 +216,10 @@ export default function Home() {
       vampnetMode,
       transplantCodebooks,
     });
-  }, [savePreset, prompt, selectedProvider, lengthSeconds, selectedPalette, selectedGameState, remixEngine, remixStrength, vampnetPeriodicPrompt, vampnetUpperCodebookMask, vampnetOnsetMaskWidth, vampnetTemperature, vampnetFeedbackSteps, vampnetStereoMode, dryWet, spectralMatch, normalizeLoudness, hpssEnabled, demucsStems, enhanceEnabled, compressEnabled, magnetTemperature, magnetTopK, vampnetMode, transplantCodebooks]);
+  }, [savePreset, prompt, lengthSeconds, selectedPalette, selectedGameState, remixEngine, remixStrength, vampnetPeriodicPrompt, vampnetUpperCodebookMask, vampnetOnsetMaskWidth, vampnetTemperature, vampnetFeedbackSteps, vampnetStereoMode, dryWet, spectralMatch, normalizeLoudness, hpssEnabled, demucsStems, enhanceEnabled, compressEnabled, magnetTemperature, magnetTopK, vampnetMode, transplantCodebooks]);
 
   const handleLoadPreset = useCallback((preset: GenerationPreset) => {
     setPrompt(preset.prompt);
-    setSelectedProvider(preset.provider as ProviderId);
     setLengthSeconds(preset.lengthSeconds);
     if (preset.palette) setSelectedPalette(preset.palette as SoundPalette);
     if (preset.gameState) setSelectedGameState(preset.gameState as GameState);
@@ -263,34 +251,6 @@ export default function Home() {
     setTimeout(() => {
       setToasts((prev) => prev.filter((item) => item.id !== id));
     }, 4000);
-  }, []);
-
-  const serializeReferencePayloads = useCallback(async (): Promise<AudioReferencePayload[]> => {
-    if (!referenceClips.length) return [];
-    return Promise.all(
-      referenceClips.map(async (clip) => ({
-        id: clip.id,
-        name: clip.name,
-        mimeType: clip.type || "audio/mpeg",
-        size: clip.size,
-        data: await readFileAsBase64(clip.file),
-      })),
-    );
-  }, [referenceClips]);
-
-  const recommendedProvider = useMemo(() => {
-    return recommendProvider(prompt, referenceClips.length > 0, lengthSeconds);
-  }, [prompt, referenceClips.length, lengthSeconds]);
-
-  useEffect(() => {
-    if (!providerPinned && recommendedProvider && selectedProvider !== recommendedProvider) {
-      setSelectedProvider(recommendedProvider);
-    }
-  }, [providerPinned, recommendedProvider, selectedProvider]);
-
-  const handleProviderChange = useCallback((provider: ProviderId) => {
-    setProviderPinned(true);
-    setSelectedProvider(provider);
   }, []);
 
   // Wrap file setters to also persist to IndexedDB
@@ -385,13 +345,6 @@ export default function Home() {
     }
   }, [selectedLora, remixFile, remixEngine]);
 
-  const resetProviderToAuto = useCallback(() => {
-    setProviderPinned(false);
-    if (recommendedProvider) {
-      setSelectedProvider(recommendedProvider);
-    }
-  }, [recommendedProvider]);
-
   const saveToLibrary = async () => {
     if (!currentSound || currentSound.status !== "ready") {
       toast("No sound to save. Generate a sound first.", "error");
@@ -450,9 +403,16 @@ export default function Home() {
       return;
     }
 
+    if (!remixFile && !selectedLora) {
+      toast("Load audio to sculpt, or select a LoRA model.", "error");
+      return;
+    }
+
     const trimmedPrompt = prompt.trim();
-    if (!trimmedPrompt) {
-      toast("Enter a brief to generate.", "error");
+
+    // Prompt required for LoRA generation (optional for sculpt)
+    if (!trimmedPrompt && !remixFile) {
+      toast("Enter a prompt to generate.", "error");
       return;
     }
 
@@ -464,7 +424,7 @@ export default function Home() {
     const requestParameters = { ...DEFAULT_PARAMETERS, lengthSeconds, seed: seedValue };
     const pendingSound: SoundGeneration = {
       id: uuid(),
-      name: generateSoundName(trimmedPrompt),
+      name: generateSoundName(trimmedPrompt || "sculpt"),
       prompt: fullPrompt,
       createdAt: new Date().toISOString(),
       audioUrl: null,
@@ -484,13 +444,13 @@ export default function Home() {
       let data: { audioUrl: string; provenanceCid?: string };
 
       if (remixFile) {
-        // Remix: encrypt audio -> POST to /api/remix -> get remixed audio back
+        // Sculpt: encrypt audio -> POST to /api/remix -> get remixed audio back
         const { readFileAsBase64 } = await import("@/components/studio/reference-panel");
         const audioB64 = await readFileAsBase64(remixFile.file);
 
         // Build optional payloads
         const donorPayload = (remixEngine === "vampnet" && vampnetMode === "transplant" && donorFile)
-          ? { donor_b64: await readFileAsBase64(donorFile.file), transplant: true, transplant_codebooks: transplantCodebooks }
+          ? { donor_b64: await (async () => { const { readFileAsBase64: r } = await import("@/components/studio/reference-panel"); return r(donorFile.file); })(), transplant: true, transplant_codebooks: transplantCodebooks }
           : {};
         const inpaintPayload = (remixEngine === "vampnet" && vampnetMode === "inpaint" && (inpaintStart > 0 || inpaintEnd > 0))
           ? { inpaint_start: inpaintStart, inpaint_end: inpaintEnd }
@@ -535,13 +495,13 @@ export default function Home() {
         }
 
         data = await response.json();
-      } else if (selectedLora) {
-        // Use LoRA generation endpoint
+      } else {
+        // LoRA generation
         const response = await fetch("/api/generate-lora", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            job_id: selectedLora.id,
+            job_id: selectedLora!.id,
             prompt: fullPrompt,
             duration_seconds: lengthSeconds,
             seed: seedValue,
@@ -551,30 +511,6 @@ export default function Home() {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error ?? "LoRA generation failed");
-        }
-
-        data = await response.json();
-      } else {
-        // Standard generation
-        const referencePayloads = await serializeReferencePayloads();
-        const response = await fetch("/api/generate-sound", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: trimmedPrompt,
-            brief_mode: briefMode,
-            parameters: requestParameters,
-            provider: selectedProvider,
-            references: referencePayloads,
-            palette: selectedPalette,
-            gameState: selectedGameState,
-            data_protection: dataProtected,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error ?? "Generation failed");
         }
 
         data = await response.json();
@@ -609,63 +545,13 @@ export default function Home() {
     }
   };
 
-  const runGameAudioGeneration = async () => {
-    if (isGenerating) {
-      toast("Generation in progress.", "neutral");
-      return;
-    }
-    if (!selectedGameState) {
-      toast("Select a game state.", "error");
-      return;
-    }
-
-    setIsGenerating(true);
-    setCurrentBundle(null);
-
-    try {
-      const response = await fetch("/api/generate-game-audio", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gameState: selectedGameState,
-          palette: selectedPalette,
-          duration: lengthSeconds,
-          bpm: DEFAULT_PARAMETERS.bpm,
-          key: DEFAULT_PARAMETERS.key,
-          basePrompt: prompt.trim() || undefined,
-          provider: selectedProvider,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? "Generation failed");
-      }
-
-      const data = await response.json();
-      if (data.success && data.bundle) {
-        setCurrentBundle(data.bundle);
-        toast(`Generated ${data.bundle.stems.length} stems.`, "success");
-      } else {
-        throw new Error(data.error || "Unknown error");
-      }
-    } catch (error) {
-      toast(error instanceof Error ? error.message : "Generation failed.", "error");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   // Keyboard shortcuts
   const shortcuts = useMemo(
     () => [
       {
         key: "g",
-        description: "Generate sound",
-        action: () => {
-          if (mode === "generate") runGeneration();
-          else if (mode === "game-audio") runGameAudioGeneration();
-        },
+        description: "Sculpt / Generate",
+        action: () => { if (mode === "generate") runGeneration(); },
       },
       {
         key: "s",
@@ -675,10 +561,9 @@ export default function Home() {
           if (currentSound?.status === "ready") saveToLibrary();
         },
       },
-      { key: "1", description: "Generate mode", action: () => setMode("generate") },
-      { key: "2", description: "Game Audio mode", action: () => setMode("game-audio") },
-      { key: "3", description: "Library", action: () => setMode("library") },
-      { key: "4", description: "Training", action: () => setMode("training") },
+      { key: "1", description: "Studio", action: () => setMode("generate") },
+      { key: "2", description: "Library", action: () => setMode("library") },
+      { key: "3", description: "Training", action: () => setMode("training") },
       { key: "?", description: "Keyboard shortcuts", action: () => setShowShortcuts((p) => !p) },
       { key: "d", description: "Toggle dark mode", action: toggleTheme },
       { key: "z", ctrl: true, description: "Undo", action: handleUndo },
@@ -700,7 +585,7 @@ export default function Home() {
           </span>
         </div>
         <nav className="flex-1 p-4 space-y-1">
-          {(["generate", "game-audio", "library", "training"] as const).map((tab) => (
+          {(["generate", "library", "training"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setMode(tab)}
@@ -710,7 +595,7 @@ export default function Home() {
                   : "text-gray-600 hover:text-gray-300"
               }`}
             >
-              {tab === "game-audio" ? "Game Audio" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === "generate" ? "Studio" : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </nav>
@@ -763,28 +648,6 @@ export default function Home() {
             <p className="text-sm text-white mb-4">Library</p>
             <LibraryPanel />
           </>
-        ) : mode === "game-audio" ? (
-          <GameAudioView
-            prompt={prompt}
-            onPromptChange={setPrompt}
-            isGenerating={isGenerating}
-            lengthSeconds={lengthSeconds}
-            onLengthChange={setLengthSeconds}
-            selectedProvider={selectedProvider}
-            onProviderChange={handleProviderChange}
-            providerPinned={providerPinned}
-            recommendedProvider={recommendedProvider}
-            onResetProviderAuto={providerPinned ? resetProviderToAuto : undefined}
-            selectedPalette={selectedPalette}
-            onPaletteChange={setSelectedPalette}
-            selectedGameState={selectedGameState}
-            onGameStateChange={setSelectedGameState}
-            currentBundle={currentBundle}
-            o8Identity={o8Identity}
-            onIdentityChange={handleIdentityChange}
-            onGenerate={runGameAudioGeneration}
-            onToast={toast}
-          />
         ) : (
           <>
             <p className="text-sm text-white/40 mb-4">Studio</p>
@@ -864,9 +727,9 @@ export default function Home() {
                       <input
                         type="number"
                         min={2}
-                        max={120}
+                        max={300}
                         value={lengthSeconds}
-                        onChange={(e) => setLengthSeconds(Math.max(2, Math.min(120, Number(e.target.value))))}
+                        onChange={(e) => setLengthSeconds(Math.max(2, Math.min(300, Number(e.target.value))))}
                         className="w-10 bg-transparent text-center text-[11px] text-white focus:outline-none"
                       />
                       <span className="text-[11px] text-gray-600">s</span>
@@ -874,30 +737,21 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* 3. CONTEXT — text input + provider */}
+                {/* 3. CONTEXT — text prompt */}
                 <div className="bg-black border border-white/[0.06] p-5">
+                  <p className="text-[11px] text-gray-500 mb-2">Context</p>
                   <input
                     type="text"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe context..."
+                    placeholder="Describe mood, texture, direction..."
                     disabled={isGenerating}
                     style={{ backgroundColor: "#0a0a0a" }}
                     className="w-full bg-[#0a0a0a] border border-white/[0.04] px-3 py-2 text-[11px] text-white placeholder:text-gray-600 focus:outline-none focus:border-white/20 transition"
                   />
-                  <div className="mt-3">
-                    <ProviderSelector
-                      value={selectedProvider}
-                      onChange={handleProviderChange}
-                      prompt={prompt}
-                      recommendation={recommendedProvider}
-                      isAuto={!providerPinned}
-                      onResetAuto={providerPinned ? resetProviderToAuto : undefined}
-                      durationSeconds={lengthSeconds}
-                      hasReferences={referenceClips.length > 0}
-                      sculptActive={!!remixFile}
-                    />
-                  </div>
+                  <p className="text-[9px] text-gray-600 mt-1.5">
+                    {remixFile ? "Optional — guides the sculpt engine" : "Required for LoRA generation"}
+                  </p>
                 </div>
 
                 {/* 4. ADVANCED — collapsed */}
@@ -915,13 +769,6 @@ export default function Home() {
                       <LoraSelector
                         value={selectedLora}
                         onChange={setSelectedLora}
-                      />
-                      <ReferencePanel
-                        clips={referenceClips}
-                        onClipsChange={setReferenceClips}
-                        dataProtected={dataProtected}
-                        onDataProtectedChange={setDataProtected}
-                        onToast={toast}
                       />
                       <PresetsPanel
                         presets={presets}
@@ -978,14 +825,14 @@ export default function Home() {
                 {/* 5. GENERATE BUTTON */}
                 <button
                   onClick={runGeneration}
-                  disabled={isGenerating}
+                  disabled={isGenerating || (!remixFile && !selectedLora)}
                   className="w-full py-3 text-xs tracking-wide text-white border border-white/20 hover:bg-white hover:text-black transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {isGenerating
                     ? (remixFile ? "Sculpting..." : "Generating...")
                     : remixFile
                       ? "Sculpt"
-                      : selectedLora ? "Generate with LoRA" : "Generate"}
+                      : selectedLora ? "Generate with LoRA" : "Load Audio to Sculpt"}
                 </button>
               </div>
 
@@ -993,7 +840,6 @@ export default function Home() {
               <OutputPanel
                 currentSound={currentSound}
                 isGenerating={isGenerating}
-                selectedProvider={selectedProvider}
                 o8Identity={o8Identity}
                 currentProvenance={currentProvenance}
                 onProvenanceStamped={(prov) => {
@@ -1059,211 +905,5 @@ export default function Home() {
 
       <ToastStack items={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
     </div>
-  );
-}
-
-/* ─── Game Audio View (kept inline, it's tightly coupled to page state) ─── */
-
-function GameAudioView({
-  prompt,
-  onPromptChange,
-  isGenerating,
-  lengthSeconds,
-  onLengthChange,
-  selectedProvider,
-  onProviderChange,
-  providerPinned,
-  recommendedProvider,
-  onResetProviderAuto,
-  selectedPalette,
-  onPaletteChange,
-  selectedGameState,
-  onGameStateChange,
-  currentBundle,
-  o8Identity,
-  onIdentityChange,
-  onGenerate,
-  onToast,
-}: {
-  prompt: string;
-  onPromptChange: (v: string) => void;
-  isGenerating: boolean;
-  lengthSeconds: number;
-  onLengthChange: (v: number) => void;
-  selectedProvider: ProviderId;
-  onProviderChange: (v: ProviderId) => void;
-  providerPinned: boolean;
-  recommendedProvider: ProviderId | null;
-  onResetProviderAuto?: () => void;
-  selectedPalette: SoundPalette | null;
-  onPaletteChange: (v: SoundPalette | null) => void;
-  selectedGameState: GameState | null;
-  onGameStateChange: (v: GameState | null) => void;
-  currentBundle: StemBundle | null;
-  o8Identity: O8Identity | null;
-  onIdentityChange: (identity: O8Identity | null, promptModifier: string) => void;
-  onGenerate: () => void;
-  onToast: (message: string, tone?: "neutral" | "success" | "error") => void;
-}) {
-  return (
-    <>
-      <p className="text-sm text-white mb-4">Game Audio</p>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <O8IdentityPanel
-            onIdentityChange={onIdentityChange}
-            className="bg-black border border-white/[0.06]"
-          />
-
-          <div className="bg-black border border-white/[0.06] p-6">
-            <p className="text-sm font-medium text-gray-400">Game State</p>
-            <p className="mt-2 text-body-sm font-light text-gray-500">
-              Generate coherent stem bundles for specific game contexts.
-            </p>
-            <div className="mt-4">
-              <GameStateSelector value={selectedGameState} onChange={onGameStateChange} showDetails={true} />
-            </div>
-          </div>
-
-          <div className="bg-black border border-white/[0.06] p-6">
-            <p className="text-sm font-medium text-gray-400">Sound Palette</p>
-            <p className="mt-2 text-body-sm font-light text-gray-500">
-              Constrain generation to a consistent aesthetic.
-            </p>
-            <div className="mt-4">
-              <PaletteEditor value={selectedPalette} onChange={onPaletteChange} />
-            </div>
-          </div>
-
-          <div className="bg-black border border-white/[0.06] p-6">
-            <p className="text-sm font-medium text-gray-400">Parameters</p>
-
-            <div className="mt-4">
-              <p className="text-body-sm font-light text-gray-500">Duration</p>
-              <div className="mt-2 flex gap-2">
-                {[15, 30, 60].map((value) => (
-                  <button
-                    key={value}
-                    onClick={() => onLengthChange(value)}
-                    className={`px-4 py-2 text-body-sm border transition ${
-                      lengthSeconds === value
-                        ? "border-white bg-white text-black"
-                        : "border-white/[0.06] text-gray-500 hover:border-white hover:text-white"
-                    }`}
-                  >
-                    {value}s
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <ProviderSelector
-                value={selectedProvider}
-                onChange={onProviderChange}
-                prompt=""
-                recommendation={recommendedProvider}
-                isAuto={!providerPinned}
-                onResetAuto={onResetProviderAuto}
-                durationSeconds={lengthSeconds}
-                hasReferences={false}
-              />
-            </div>
-
-            <div className="mt-4">
-              <p className="text-body-sm font-light text-gray-500">Style Direction (Optional)</p>
-              <textarea
-                className="w-full bg-black border-0 border-b border-white/[0.06] px-3 py-3 text-white font-light placeholder:text-gray-600 focus:outline-none focus:border-white/[0.12] transition-colors mt-2 resize-none"
-                rows={2}
-                placeholder="e.g., orchestral, epic, brass..."
-                value={prompt}
-                onChange={(e) => onPromptChange(e.target.value)}
-                disabled={isGenerating}
-              />
-            </div>
-
-            <div className="mt-6">
-              <button
-                onClick={onGenerate}
-                disabled={isGenerating || !selectedGameState}
-                className="w-full px-6 py-3 text-body-sm font-medium text-black bg-white hover:bg-gray-200 transition-colors duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isGenerating ? "Generating..." : "Generate Stem Bundle"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Result */}
-        <div className="bg-black border border-white/[0.06] p-6">
-          <p className="text-sm font-medium text-gray-400">Output</p>
-
-          {currentBundle ? (
-            <div className="mt-4">
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
-                <div>
-                  <p className="text-sm font-medium capitalize text-white">{currentBundle.gameState} Bundle</p>
-                  <p className="text-body-sm font-light text-gray-500">{currentBundle.stems.length} stems generated</p>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                {currentBundle.stems.map((stem) => (
-                  <div key={stem.stemType} className="border border-white/[0.06] p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium capitalize">{stem.stemType}</p>
-                        <p className="text-body-sm font-light text-gray-500">
-                          {stem.duration}s · {stem.metadata.bpm} BPM
-                          {stem.provenanceCid && " · Provenance verified"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <audio controls src={stem.audioUrl} preload="metadata" controlsList="nodownload noplaybackrate" className="h-8 w-full" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 border-t border-white/[0.06] pt-4">
-                <p className="text-body-sm font-light text-gray-500">Bundle ID: {currentBundle.id}</p>
-                <div className="mt-3">
-                  {o8Identity ? (
-                    <div className="flex items-center gap-2 text-[#66023C]">
-                      <svg width="14" height="14" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                        <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                      </svg>
-                      <span className="text-body-sm">Created by {o8Identity.creator.name}</span>
-                    </div>
-                  ) : (
-                    <p className="text-body-sm font-light text-gray-500">Connect an ∞8 identity to stamp provenance</p>
-                  )}
-                </div>
-
-                {currentBundle.stems.length > 0 && (
-                  <button
-                    onClick={() => onToast(`Exported ${currentBundle.stems.length} stems to Burn the Square.`, "success")}
-                    className="mt-3 w-full border border-[#66023C] bg-[#66023C]/10 px-4 py-2 text-[#66023C] transition-colors hover:bg-[#66023C] hover:text-white"
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      </svg>
-                      Export to Burn the Square
-                    </span>
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4 py-12 text-center">
-              <p className="text-sm font-light text-gray-500">Select a game state and generate to create a stem bundle.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
   );
 }
