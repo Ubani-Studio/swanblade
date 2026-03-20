@@ -24,7 +24,10 @@ function formatBytes(bytes: number) {
   return `${value.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-export type RemixEngineId = "stable-audio" | "vampnet";
+export type RemixEngineId = "stable-audio" | "vampnet" | "magnet";
+export type StereoMode = "mid-side" | "independent" | "mono-widen";
+export type VampnetMode = "full" | "inpaint" | "transplant";
+export type TransplantCodebooks = "low" | "mid" | "high";
 
 interface RemixPanelProps {
   file: RemixFile | null;
@@ -35,13 +38,47 @@ interface RemixPanelProps {
   onEngineChange: (engine: RemixEngineId) => void;
   periodicPrompt: number;
   onPeriodicPromptChange: (value: number) => void;
+  upperCodebookMask: number;
+  onUpperCodebookMaskChange: (value: number) => void;
   onsetMaskWidth: number;
   onOnsetMaskWidthChange: (value: number) => void;
   temperature: number;
   onTemperatureChange: (value: number) => void;
   feedbackSteps: number;
   onFeedbackStepsChange: (value: number) => void;
+  stereoMode: StereoMode;
+  onStereoModeChange: (mode: StereoMode) => void;
+  dryWet: number;
+  onDryWetChange: (value: number) => void;
+  spectralMatch: boolean;
+  onSpectralMatchChange: (value: boolean) => void;
+  normalizeLoudness: boolean;
+  onNormalizeLoudnessChange: (value: boolean) => void;
+  hpssEnabled: boolean;
+  onHpssChange: (value: boolean) => void;
+  demucsStems: string[];
+  onDemucsStemsChange: (stems: string[]) => void;
+  enhanceEnabled: boolean;
+  onEnhanceChange: (value: boolean) => void;
+  compressEnabled: boolean;
+  onCompressChange: (value: boolean) => void;
+  magnetTemperature: number;
+  onMagnetTemperatureChange: (value: number) => void;
+  magnetTopK: number;
+  onMagnetTopKChange: (value: number) => void;
+  referenceFile: RemixFile | null;
+  onReferenceFileChange: (file: RemixFile | null) => void;
   onToast: (message: string, tone?: "neutral" | "success" | "error") => void;
+  // VampNet advanced modes
+  vampnetMode: VampnetMode;
+  onVampnetModeChange: (mode: VampnetMode) => void;
+  inpaintStart: number;
+  inpaintEnd: number;
+  onInpaintRangeChange: (start: number, end: number) => void;
+  donorFile: RemixFile | null;
+  onDonorFileChange: (file: RemixFile | null) => void;
+  transplantCodebooks: TransplantCodebooks;
+  onTransplantCodebooksChange: (cb: TransplantCodebooks) => void;
 }
 
 export function RemixPanel({
@@ -53,13 +90,46 @@ export function RemixPanel({
   onEngineChange,
   periodicPrompt,
   onPeriodicPromptChange,
+  upperCodebookMask,
+  onUpperCodebookMaskChange,
   onsetMaskWidth,
   onOnsetMaskWidthChange,
   temperature,
   onTemperatureChange,
   feedbackSteps,
   onFeedbackStepsChange,
+  stereoMode,
+  onStereoModeChange,
+  dryWet,
+  onDryWetChange,
+  spectralMatch,
+  onSpectralMatchChange,
+  normalizeLoudness,
+  onNormalizeLoudnessChange,
+  hpssEnabled,
+  onHpssChange,
+  demucsStems,
+  onDemucsStemsChange,
+  enhanceEnabled,
+  onEnhanceChange,
+  compressEnabled,
+  onCompressChange,
+  magnetTemperature,
+  onMagnetTemperatureChange,
+  magnetTopK,
+  onMagnetTopKChange,
+  referenceFile,
+  onReferenceFileChange,
   onToast,
+  vampnetMode,
+  onVampnetModeChange,
+  inpaintStart,
+  inpaintEnd,
+  onInpaintRangeChange,
+  donorFile,
+  onDonorFileChange,
+  transplantCodebooks,
+  onTransplantCodebooksChange,
 }: RemixPanelProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,7 +195,7 @@ export function RemixPanel({
     <div className="bg-black border border-white/[0.06] p-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-400">Sculpt</p>
+        <p className="text-sm font-medium text-gray-400">Input</p>
         {file && (
           <button
             onClick={() => setFile(null)}
@@ -180,7 +250,7 @@ export function RemixPanel({
             </svg>
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-light ${isDragging ? "text-white" : "text-gray-500 group-hover:text-gray-300"}`}>
-                {isDragging ? "Drop to sculpt" : "Drop audio or browse"}
+                {isDragging ? "Drop to sculpt" : "Drop audio to sculpt"}
               </p>
               <p className="text-[10px] text-gray-600">25 MB</p>
             </div>
@@ -196,11 +266,15 @@ export function RemixPanel({
             src={file.previewUrl}
             name={file.name}
             size={file.size}
+            inpaintMode={engine === "vampnet" && vampnetMode === "inpaint"}
+            inpaintStart={inpaintStart}
+            inpaintEnd={inpaintEnd}
+            onInpaintRangeChange={onInpaintRangeChange}
           />
 
           {/* Engine */}
           <div className="flex gap-1.5">
-            {(["stable-audio", "vampnet"] as const).map((eng) => (
+            {(["stable-audio", "vampnet", "magnet"] as const).map((eng) => (
               <button
                 key={eng}
                 onClick={() => onEngineChange(eng)}
@@ -210,10 +284,98 @@ export function RemixPanel({
                     : "border-white/[0.04] text-gray-600 hover:text-gray-400"
                 }`}
               >
-                {eng === "stable-audio" ? "Diffusion" : "VampNet"}
+                {eng === "stable-audio" ? "Diffusion" : eng === "vampnet" ? "VampNet" : "MAGNeT"}
               </button>
             ))}
           </div>
+
+          {/* VampNet mode toggle */}
+          {engine === "vampnet" && (
+            <div className="flex gap-1.5">
+              {(["full", "inpaint", "transplant"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => onVampnetModeChange(m)}
+                  className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                    vampnetMode === m
+                      ? "border-white/20 bg-white/[0.06] text-white"
+                      : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                  }`}
+                >
+                  {m === "full" ? "Full" : m === "inpaint" ? "Inpaint" : "Transplant"}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Inpaint hint */}
+          {engine === "vampnet" && vampnetMode === "inpaint" && (
+            <p className="text-[9px] text-gray-600">
+              {(inpaintStart ?? 0) > 0 || (inpaintEnd ?? 0) > 0
+                ? `Region: ${formatTime(inpaintStart ?? 0)} — ${formatTime(inpaintEnd ?? 0)}. Only this section will be regenerated.`
+                : "Drag on the waveform to select a region to regenerate."}
+            </p>
+          )}
+
+          {/* Transplant: donor audio drop zone + codebook presets */}
+          {engine === "vampnet" && vampnetMode === "transplant" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-gray-500">Donor Audio</p>
+                {donorFile && (
+                  <button
+                    onClick={() => onDonorFileChange(null)}
+                    className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {donorFile ? (
+                <div className="border border-white/[0.08] bg-white/[0.02] px-3 py-2 flex items-center justify-between">
+                  <p className="text-[10px] text-gray-400 truncate max-w-[180px]">{donorFile.name}</p>
+                  <p className="text-[10px] text-gray-600 shrink-0 ml-2">{formatBytes(donorFile.size)}</p>
+                </div>
+              ) : (
+                <ReferenceDropZone label="Drop donor audio" onFile={(f) => {
+                  if (!f.type.startsWith("audio/")) {
+                    onToast("Audio files only.", "error");
+                    return;
+                  }
+                  if (f.size > MAX_FILE_BYTES) {
+                    onToast("File exceeds 25 MB limit.", "error");
+                    return;
+                  }
+                  const previewUrl = URL.createObjectURL(f);
+                  onDonorFileChange({ file: f, name: f.name, size: f.size, previewUrl });
+                }} />
+              )}
+              <div>
+                <p className="text-[11px] text-gray-500 mb-1.5">Take From Donor</p>
+                <div className="flex gap-1.5">
+                  {([
+                    { id: "low" as const, label: "Rhythm", desc: "Donor's rhythm + your texture" },
+                    { id: "mid" as const, label: "Tone", desc: "Donor's tone + your structure" },
+                    { id: "high" as const, label: "Texture", desc: "Donor's texture + your rhythm" },
+                  ]).map((preset) => (
+                    <button
+                      key={preset.id}
+                      onClick={() => onTransplantCodebooksChange(preset.id)}
+                      title={preset.desc}
+                      className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                        transplantCodebooks === preset.id
+                          ? "border-white/20 bg-white/[0.06] text-white"
+                          : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[9px] text-gray-600">Mix codebook layers from two audio sources.</p>
+            </div>
+          )}
 
           {/* Engine-specific controls */}
           {engine === "stable-audio" ? (
@@ -228,8 +390,81 @@ export function RemixPanel({
               lo="Subtle"
               hi="Deep"
             />
+          ) : engine === "magnet" ? (
+            <>
+              <Slider
+                label="Temperature"
+                value={magnetTemperature}
+                onChange={onMagnetTemperatureChange}
+                min={1.0}
+                max={10.0}
+                step={0.5}
+                format={(v) => v.toFixed(1)}
+                lo="Focused"
+                hi="Wild"
+              />
+              <Slider
+                label="Top-K"
+                value={magnetTopK}
+                onChange={onMagnetTopKChange}
+                min={50}
+                max={500}
+                step={25}
+                format={(v) => String(v)}
+                lo="Narrow"
+                hi="Diverse"
+              />
+              <p className="text-[10px] text-gray-600">
+                Generates new audio from text prompt. Your input sets the mood.
+              </p>
+            </>
           ) : (
             <>
+              {/* ── VampNet Presets ── */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[11px] text-gray-500">Preset</p>
+                </div>
+                <div className="flex gap-1.5">
+                  {([
+                    { label: "Texture", pp: 3, ucm: 5, temp: 0.8, desc: "Recognizable but noticeably different" },
+                    { label: "Sculpt", pp: 4, ucm: 2, temp: 1.0, desc: "Creative transformation — clearly different" },
+                    { label: "Radical", pp: 3, ucm: 1, temp: 1.3, desc: "Aggressive reimagining" },
+                  ] as const).map((preset) => {
+                    const active = periodicPrompt === preset.pp && upperCodebookMask === preset.ucm && Math.abs(temperature - preset.temp) < 0.05;
+                    return (
+                      <button
+                        key={preset.label}
+                        onClick={() => {
+                          onPeriodicPromptChange(preset.pp);
+                          onUpperCodebookMaskChange(preset.ucm);
+                          onTemperatureChange(preset.temp);
+                        }}
+                        title={preset.desc}
+                        className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                          active
+                            ? "border-white/20 bg-white/[0.06] text-white"
+                            : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <Slider
+                label="Depth"
+                value={upperCodebookMask}
+                onChange={onUpperCodebookMaskChange}
+                min={1}
+                max={7}
+                step={1}
+                format={(v) => (v <= 2 ? "Deep" : v <= 4 ? "Mid" : "Surface")}
+                lo="Deep"
+                hi="Surface"
+              />
               <Slider
                 label="Preservation"
                 value={periodicPrompt}
@@ -284,10 +519,212 @@ export function RemixPanel({
                   ))}
                 </div>
               </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[11px] text-gray-500">Stereo</p>
+                  <p className="text-[11px] text-gray-400">
+                    {stereoMode === "mid-side" ? "M/S" : stereoMode === "independent" ? "L/R" : "Widen"}
+                  </p>
+                </div>
+                <div className="flex gap-1.5">
+                  {(["mid-side", "independent", "mono-widen"] as StereoMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => onStereoModeChange(mode)}
+                      className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                        stereoMode === mode
+                          ? "border-white/20 bg-white/[0.06] text-white"
+                          : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                      }`}
+                    >
+                      {mode === "mid-side" ? "M/S" : mode === "independent" ? "L/R" : "Widen"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Post-Processing ── */}
+              <div className="border-t border-white/[0.06] pt-3 mt-1">
+                <Slider
+                  label="Dry / Wet"
+                  value={dryWet}
+                  onChange={onDryWetChange}
+                  min={0}
+                  max={100}
+                  step={5}
+                  format={(v) => `${v}%`}
+                  lo="Original"
+                  hi="Sculpted"
+                />
+              </div>
+
+              {/* ── Pre-Processing ── */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <p className="text-[11px] text-gray-500">Pre-Process</p>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => {
+                      onHpssChange(!hpssEnabled);
+                      if (!hpssEnabled) onDemucsStemsChange([]);
+                    }}
+                    className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                      hpssEnabled
+                        ? "border-white/20 bg-white/[0.06] text-white"
+                        : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                    }`}
+                  >
+                    HPSS
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (demucsStems.length > 0) {
+                        onDemucsStemsChange([]);
+                      } else {
+                        onDemucsStemsChange(["vocals", "other"]);
+                        onHpssChange(false);
+                      }
+                    }}
+                    className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                      demucsStems.length > 0
+                        ? "border-white/20 bg-white/[0.06] text-white"
+                        : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                    }`}
+                  >
+                    Stems
+                  </button>
+                </div>
+                {demucsStems.length > 0 && (
+                  <div className="flex gap-1 mt-1.5">
+                    {["vocals", "drums", "bass", "other"].map((stem) => (
+                      <button
+                        key={stem}
+                        onClick={() => {
+                          const next = demucsStems.includes(stem)
+                            ? demucsStems.filter((s) => s !== stem)
+                            : [...demucsStems, stem];
+                          onDemucsStemsChange(next);
+                        }}
+                        className={`px-1.5 py-0.5 text-[10px] border transition-colors duration-150 ${
+                          demucsStems.includes(stem)
+                            ? "border-white/20 bg-white/[0.06] text-white"
+                            : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                        }`}
+                      >
+                        {stem}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Toggles ── */}
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => onSpectralMatchChange(!spectralMatch)}
+                  className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                    spectralMatch
+                      ? "border-white/20 bg-white/[0.06] text-white"
+                      : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                  }`}
+                  title="Match output EQ curve to original"
+                >
+                  EQ Match
+                </button>
+                <button
+                  onClick={() => onCompressChange(!compressEnabled)}
+                  className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                    compressEnabled
+                      ? "border-white/20 bg-white/[0.06] text-white"
+                      : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                  }`}
+                  title="Light compression + limiting"
+                >
+                  Compress
+                </button>
+                <button
+                  onClick={() => onNormalizeLoudnessChange(!normalizeLoudness)}
+                  className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                    normalizeLoudness
+                      ? "border-white/20 bg-white/[0.06] text-white"
+                      : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                  }`}
+                >
+                  Normalize
+                </button>
+                <button
+                  onClick={() => onEnhanceChange(!enhanceEnabled)}
+                  className={`flex-1 px-2 py-1 text-[11px] border transition-colors duration-150 ${
+                    enhanceEnabled
+                      ? "border-white/20 bg-white/[0.06] text-white"
+                      : "border-white/[0.04] text-gray-600 hover:text-gray-400"
+                  }`}
+                  title="AudioSR: adds ~30s, improves high-frequency detail"
+                >
+                  Enhance
+                </button>
+              </div>
             </>
           )}
+
+          {/* ── Reference Master ── */}
+          <div className="border-t border-white/[0.06] pt-3 mt-1">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[11px] text-gray-500">Reference Master</p>
+              {referenceFile && (
+                <button
+                  onClick={() => onReferenceFileChange(null)}
+                  className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {referenceFile ? (
+              <div className="border border-white/[0.08] bg-white/[0.02] px-3 py-2 flex items-center justify-between">
+                <p className="text-[10px] text-gray-400 truncate max-w-[180px]">{referenceFile.name}</p>
+                <p className="text-[10px] text-gray-600 shrink-0 ml-2">{formatBytes(referenceFile.size)}</p>
+              </div>
+            ) : (
+              <ReferenceDropZone onFile={(f) => {
+                if (!f.type.startsWith("audio/")) {
+                  onToast("Audio files only.", "error");
+                  return;
+                }
+                if (f.size > MAX_FILE_BYTES) {
+                  onToast("File exceeds 25 MB limit.", "error");
+                  return;
+                }
+                const previewUrl = URL.createObjectURL(f);
+                onReferenceFileChange({ file: f, name: f.name, size: f.size, previewUrl });
+              }} />
+            )}
+            <p className="text-[9px] text-gray-600 mt-1">Match EQ and loudness to a reference track.</p>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Reference drop zone ── */
+
+function ReferenceDropZone({ onFile, label = "Drop reference track" }: { onFile: (f: File) => void; label?: string }) {
+  const [over, setOver] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div
+      className={`border border-dashed px-3 py-2 cursor-pointer transition-colors ${
+        over ? "border-white/20 bg-white/[0.02]" : "border-white/[0.06] hover:border-white/[0.12]"
+      }`}
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={(e) => { e.preventDefault(); setOver(false); }}
+      onDrop={(e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) onFile(f); }}
+      onClick={() => ref.current?.click()}
+    >
+      <input ref={ref} type="file" accept="audio/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = ""; }} />
+      <p className={`text-[10px] ${over ? "text-white" : "text-gray-500"}`}>{label}</p>
     </div>
   );
 }
@@ -321,6 +758,7 @@ function drawWaveform(
   canvas: HTMLCanvasElement,
   peaks: number[],
   progress: number,
+  inpaintRegion?: { start: number; end: number },
 ) {
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
@@ -382,16 +820,41 @@ function drawWaveform(
     ctx.lineWidth = 1;
     ctx.stroke();
   }
+
+  // Inpaint region overlay
+  if (inpaintRegion && inpaintRegion.start < inpaintRegion.end) {
+    const x1 = w * inpaintRegion.start;
+    const x2 = w * inpaintRegion.end;
+    ctx.fillStyle = "rgba(102, 2, 60, 0.25)";
+    ctx.fillRect(x1, 0, x2 - x1, h);
+    // Edge lines
+    ctx.strokeStyle = "rgba(180, 30, 100, 0.6)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x1, 0); ctx.lineTo(x1, h);
+    ctx.moveTo(x2, 0); ctx.lineTo(x2, h);
+    ctx.stroke();
+  }
 }
 
 function WaveformPlayer({
   src,
   name,
   size,
+  inpaintMode,
+  inpaintStart,
+  inpaintEnd,
+  duration: externalDuration,
+  onInpaintRangeChange,
 }: {
   src: string;
   name: string;
   size: number;
+  inpaintMode?: boolean;
+  inpaintStart?: number;
+  inpaintEnd?: number;
+  duration?: number;
+  onInpaintRangeChange?: (start: number, end: number) => void;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -401,6 +864,15 @@ function WaveformPlayer({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [decoded, setDecoded] = useState(false);
+
+  // Inpaint drag state
+  const dragRef = useRef<{ active: boolean; startX: number }>({ active: false, startX: 0 });
+
+  // Compute inpaint region as fraction (0-1) for rendering
+  const activeDuration = duration || externalDuration || 1;
+  const inpaintRegion = (inpaintMode && ((inpaintStart ?? 0) > 0 || (inpaintEnd ?? 0) > 0))
+    ? { start: (inpaintStart ?? 0) / activeDuration, end: (inpaintEnd ?? 0) / activeDuration }
+    : undefined;
 
   // Decode audio → extract peaks
   useEffect(() => {
@@ -419,7 +891,7 @@ function WaveformPlayer({
         peaksRef.current = extractPeaks(buffer, 256);
         setDecoded(true);
         if (canvasRef.current) {
-          drawWaveform(canvasRef.current, peaksRef.current, 0);
+          drawWaveform(canvasRef.current, peaksRef.current, 0, inpaintRegion);
         }
       })
       .catch(() => {});
@@ -428,7 +900,7 @@ function WaveformPlayer({
       cancelled = true;
       actx.close();
     };
-  }, [src]);
+  }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Animation loop — smooth playhead
   useEffect(() => {
@@ -439,7 +911,7 @@ function WaveformPlayer({
         const t = audio.currentTime;
         const d = audio.duration || 0;
         setCurrentTime(t);
-        drawWaveform(canvas, peaksRef.current, d > 0 ? t / d : 0);
+        drawWaveform(canvas, peaksRef.current, d > 0 ? t / d : 0, inpaintRegion);
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -453,9 +925,9 @@ function WaveformPlayer({
   useEffect(() => {
     if (!isPlaying && decoded && canvasRef.current) {
       const d = duration || 1;
-      drawWaveform(canvasRef.current, peaksRef.current, currentTime / d);
+      drawWaveform(canvasRef.current, peaksRef.current, currentTime / d, inpaintRegion);
     }
-  }, [isPlaying, decoded, currentTime, duration]);
+  }, [isPlaying, decoded, currentTime, duration, inpaintRegion?.start, inpaintRegion?.end]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -470,6 +942,7 @@ function WaveformPlayer({
   };
 
   const seek = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (inpaintMode) return; // Inpaint mode uses drag, not click-to-seek
     const audio = audioRef.current;
     const canvas = canvasRef.current;
     if (!audio || !canvas || !duration) return;
@@ -479,11 +952,45 @@ function WaveformPlayer({
     setCurrentTime(audio.currentTime);
   };
 
+  // Inpaint drag-to-select handlers
+  const onCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!inpaintMode || !onInpaintRangeChange) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    dragRef.current = { active: true, startX: ratio };
+    onInpaintRangeChange(ratio * activeDuration, ratio * activeDuration);
+  };
+
+  const onCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!dragRef.current.active || !onInpaintRangeChange) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const startRatio = dragRef.current.startX;
+    const s = Math.min(startRatio, ratio) * activeDuration;
+    const end = Math.max(startRatio, ratio) * activeDuration;
+    onInpaintRangeChange(s, end);
+  };
+
+  const onCanvasMouseUp = () => {
+    dragRef.current.active = false;
+  };
+
   return (
     <div className="border border-white/[0.08] bg-white/[0.02] p-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-white truncate max-w-[200px]">{name}</p>
-        <p className="text-[10px] text-gray-500 ml-2 shrink-0">{formatBytes(size)}</p>
+        <div className="flex items-center gap-2">
+          {inpaintMode && (inpaintStart ?? 0) > 0 && (inpaintEnd ?? 0) > 0 && (
+            <p className="text-[10px] text-pink-400/70">
+              {formatTime(inpaintStart ?? 0)}-{formatTime(inpaintEnd ?? 0)}
+            </p>
+          )}
+          <p className="text-[10px] text-gray-500 shrink-0">{formatBytes(size)}</p>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
@@ -509,7 +1016,11 @@ function WaveformPlayer({
         <canvas
           ref={canvasRef}
           onClick={seek}
-          className="flex-1 h-8 cursor-pointer"
+          onMouseDown={onCanvasMouseDown}
+          onMouseMove={onCanvasMouseMove}
+          onMouseUp={onCanvasMouseUp}
+          onMouseLeave={onCanvasMouseUp}
+          className={`flex-1 h-8 ${inpaintMode ? "cursor-crosshair" : "cursor-pointer"}`}
         />
 
         {/* Time */}
@@ -530,7 +1041,7 @@ function WaveformPlayer({
           setIsPlaying(false);
           setCurrentTime(0);
           if (canvasRef.current) {
-            drawWaveform(canvasRef.current, peaksRef.current, 0);
+            drawWaveform(canvasRef.current, peaksRef.current, 0, inpaintRegion);
           }
         }}
       />

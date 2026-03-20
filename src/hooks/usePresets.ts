@@ -5,8 +5,10 @@ import { uuid } from "@/lib/utils";
 import type { SoundCategory, GameState } from "@/types";
 import type { SoundPalette } from "@/lib/soundPalette";
 import type { ProviderId } from "@/components/provider-selector";
+import type { RemixEngineId, StereoMode, VampnetMode, TransplantCodebooks } from "@/components/studio/remix-panel";
 
 const STORAGE_KEY = "swanblade-presets";
+const CHAINS_KEY = "swanblade-chain-recipes";
 
 export interface GenerationPreset {
   id: string;
@@ -19,6 +21,37 @@ export interface GenerationPreset {
   gameState?: GameState | null;
   type?: SoundCategory;
   tags?: string[];
+  // Sculpt params (optional — only set when saved from sculpt mode)
+  engine?: RemixEngineId;
+  strength?: number;
+  periodicPrompt?: number;
+  upperCodebookMask?: number;
+  onsetMaskWidth?: number;
+  temperature?: number;
+  feedbackSteps?: number;
+  stereoMode?: StereoMode;
+  dryWet?: number;
+  spectralMatch?: boolean;
+  normalizeLoudness?: boolean;
+  compressEnabled?: boolean;
+  hpssEnabled?: boolean;
+  demucsStems?: string[];
+  enhanceEnabled?: boolean;
+  magnetTemperature?: number;
+  magnetTopK?: number;
+  vampnetMode?: VampnetMode;
+  transplantCodebooks?: TransplantCodebooks;
+}
+
+export interface ChainStep {
+  presetId: string;
+}
+
+export interface ChainRecipe {
+  id: string;
+  name: string;
+  createdAt: string;
+  steps: ChainStep[];
 }
 
 function loadPresets(): GenerationPreset[] {
@@ -38,6 +71,23 @@ function savePresets(presets: GenerationPreset[]) {
   } catch {
     // Storage full or unavailable
   }
+}
+
+function loadChains(): ChainRecipe[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(CHAINS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveChains(chains: ChainRecipe[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CHAINS_KEY, JSON.stringify(chains));
+  } catch {}
 }
 
 // Default presets to start with
@@ -73,17 +123,18 @@ const DEFAULT_PRESETS: GenerationPreset[] = [
 
 export function usePresets() {
   const [presets, setPresets] = useState<GenerationPreset[]>([]);
+  const [chains, setChains] = useState<ChainRecipe[]>([]);
 
-  // Load presets on mount
+  // Load presets + chains on mount
   useEffect(() => {
     const loaded = loadPresets();
     if (loaded.length === 0) {
-      // Initialize with defaults
       setPresets(DEFAULT_PRESETS);
       savePresets(DEFAULT_PRESETS);
     } else {
       setPresets(loaded);
     }
+    setChains(loadChains());
   }, []);
 
   // Save preset
@@ -112,12 +163,20 @@ export function usePresets() {
     });
   }, []);
 
-  // Delete preset
+  // Delete preset + clean up any chains referencing it
   const deletePreset = useCallback((id: string) => {
     setPresets((prev) => {
       const updated = prev.filter((p) => p.id !== id);
       savePresets(updated);
       return updated;
+    });
+    // Remove the deleted preset from any chain steps; drop chains that become empty
+    setChains((prev) => {
+      const cleaned = prev
+        .map((c) => ({ ...c, steps: c.steps.filter((s) => s.presetId !== id) }))
+        .filter((c) => c.steps.length > 0);
+      saveChains(cleaned);
+      return cleaned;
     });
   }, []);
 
@@ -142,11 +201,38 @@ export function usePresets() {
     return duplicate;
   }, [presets]);
 
+  // Chain recipes
+  const saveChain = useCallback((name: string, steps: ChainStep[]) => {
+    const chain: ChainRecipe = {
+      id: uuid(),
+      name,
+      createdAt: new Date().toISOString(),
+      steps,
+    };
+    setChains((prev) => {
+      const updated = [chain, ...prev];
+      saveChains(updated);
+      return updated;
+    });
+    return chain;
+  }, []);
+
+  const deleteChain = useCallback((id: string) => {
+    setChains((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      saveChains(updated);
+      return updated;
+    });
+  }, []);
+
   return {
     presets,
     savePreset,
     updatePreset,
     deletePreset,
     duplicatePreset,
+    chains,
+    saveChain,
+    deleteChain,
   };
 }
