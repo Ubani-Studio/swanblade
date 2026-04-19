@@ -50,11 +50,13 @@ export const aceStepAdapter: StageAdapter = {
     }
     const duration = Math.max(1, Math.min(240, Number(stage.parameters?.duration_seconds ?? spec.duration_seconds ?? 30)));
     const seed = Number(stage.parameters?.seed ?? spec.seed ?? Math.floor(Math.random() * 1e6));
+    const loraJobId = (stage.parameters?.lora_job_id as string) || "";
 
     try {
-      const cmd =
+      let cmd =
         `cd ${MODAL_DIR} && modal run ace_step.py --generate ` +
         `--prompt "$SWANBLADE_PROMPT" --duration ${duration} --seed ${seed}`;
+      if (loraJobId) cmd += ` --lora-job-id "${loraJobId}"`;
       const stdout = execSync(cmd, {
         timeout: 600000,
         encoding: "utf-8",
