@@ -39,6 +39,7 @@ export default function DatasetPage() {
   const [trainable, setTrainable] = useState(0);
   const [training, setTraining] = useState(false);
   const [trainError, setTrainError] = useState<string | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   const meta = LAYER_META[active];
 
@@ -212,12 +213,22 @@ export default function DatasetPage() {
               <p className="text-sm text-white">{meta.title}</p>
               <p className="text-[11px] text-gray-500 mt-1 max-w-xl">{meta.purpose}</p>
             </div>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="px-3 py-1.5 text-[10px] border border-white/20 hover:bg-white hover:text-black transition"
-            >
-              + Add
-            </button>
+            <div className="flex items-center gap-2">
+              {meta.accepts.includes("audio") && (
+                <button
+                  onClick={() => setShowImport(true)}
+                  className="px-3 py-1.5 text-[10px] border border-white/[0.06] text-gray-400 hover:text-white hover:border-white/20 transition"
+                >
+                  Import from library
+                </button>
+              )}
+              <button
+                onClick={() => setShowAdd(true)}
+                className="px-3 py-1.5 text-[10px] border border-white/20 hover:bg-white hover:text-black transition"
+              >
+                + Add
+              </button>
+            </div>
           </div>
         </section>
 
@@ -240,6 +251,17 @@ export default function DatasetPage() {
           onSaved={() => {
             setShowAdd(false);
             load(active);
+            loadTrainable();
+          }}
+        />
+      )}
+      {showImport && (
+        <LibraryImporter
+          layer={active}
+          onClose={() => setShowImport(false)}
+          onDone={() => {
+            load(active);
+            loadTrainable();
           }}
         />
       )}
@@ -297,9 +319,30 @@ function AddEntryModal({
   const [kind, setKind] = useState("");
   const [content, setContent] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
+  const [audioFileName, setAudioFileName] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [optIn, setOptIn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const uploadAudio = async (file: File) => {
+    setUploading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const r = await fetch("/api/dataset/audio/upload", { method: "POST", body: form });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? "Upload failed");
+      setAudioUrl(d.audio_url);
+      setAudioFileName(file.name);
+      if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -346,7 +389,43 @@ function AddEntryModal({
             <Textarea label="Notes" value={content} onChange={setContent} placeholder={meta.placeholder} />
           )}
           {meta.accepts.includes("audio") && (
-            <Input label="Audio URL (optional)" value={audioUrl} onChange={setAudioUrl} placeholder="Paste a signed URL or library link" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] tracking-wide text-gray-500 uppercase">Audio file</span>
+                {audioUrl && (
+                  <button
+                    type="button"
+                    onClick={() => { setAudioUrl(""); setAudioFileName(""); }}
+                    className="text-[10px] text-gray-600 hover:text-white"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              {audioUrl ? (
+                <div className="border border-white/[0.04] p-3 space-y-2">
+                  <p className="text-[11px] text-white truncate">{audioFileName || "Uploaded"}</p>
+                  <audio controls src={audioUrl} className="w-full h-8" />
+                </div>
+              ) : (
+                <label className="block border border-dashed border-white/[0.12] hover:border-white/[0.24] p-4 text-center cursor-pointer transition">
+                  <input
+                    type="file"
+                    accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a,.aiff,.aif"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadAudio(f);
+                    }}
+                    className="hidden"
+                    disabled={uploading}
+                  />
+                  <p className="text-[11px] text-gray-400">
+                    {uploading ? "Uploading..." : "Drop or click to upload audio"}
+                  </p>
+                  <p className="text-[10px] text-gray-600 mt-1">wav, mp3, flac, ogg, m4a — stays on your machine</p>
+                </label>
+              )}
+            </div>
           )}
           <label className="flex items-center justify-between text-[11px] text-gray-400 border border-white/[0.04] px-3 py-2">
             <span>Include in AI training (LoRA + reranker)</span>
@@ -364,13 +443,119 @@ function AddEntryModal({
           </button>
           <button
             type="submit"
-            disabled={saving || !title}
+            disabled={saving || uploading || !title}
             className="px-3 py-1.5 text-[10px] border border-white/20 hover:bg-white hover:text-black transition disabled:opacity-40"
           >
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+interface LibrarySoundItem {
+  id: string;
+  name: string;
+  prompt: string;
+  createdAt: string;
+  lengthSeconds: number;
+  type: string;
+  hasAudio: boolean;
+}
+
+function LibraryImporter({
+  layer,
+  onClose,
+  onDone,
+}: {
+  layer: DatasetLayer;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [sounds, setSounds] = useState<LibrarySoundItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [imported, setImported] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/dataset/library-import")
+      .then((r) => r.json())
+      .then((d) => setSounds(d.sounds ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const importSound = async (sound: LibrarySoundItem) => {
+    setBusy(sound.id);
+    setError(null);
+    try {
+      const r = await fetch("/api/dataset/library-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sound_id: sound.id, layer }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? "Import failed");
+      setImported((prev) => new Set(prev).add(sound.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const withAudio = sounds.filter((s) => s.hasAudio);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6" onClick={onClose}>
+      <div
+        className="bg-black border border-white/[0.08] max-w-2xl w-full max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <div>
+            <p className="text-sm text-white">Import from library</p>
+            <p className="text-[10px] text-gray-500 mt-0.5">Into {LAYER_META[layer].title}</p>
+          </div>
+          <button onClick={() => { onDone(); onClose(); }} className="text-xs text-gray-500 hover:text-white">Done</button>
+        </div>
+        <div className="p-5 overflow-y-auto flex-1">
+          {loading && <p className="text-xs text-gray-500">Loading library...</p>}
+          {!loading && withAudio.length === 0 && (
+            <p className="text-xs text-gray-600">No library sounds with audio yet. Generate something in Studio first.</p>
+          )}
+          {error && <p className="text-[11px] text-red-400 mb-3">{error}</p>}
+          <div className="space-y-1">
+            {withAudio.map((s) => {
+              const done = imported.has(s.id);
+              const working = busy === s.id;
+              return (
+                <div key={s.id} className="flex items-center justify-between gap-3 border border-white/[0.04] px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] text-white truncate">{s.name}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{s.prompt}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-600">{s.lengthSeconds.toFixed(0)}s</span>
+                    <button
+                      disabled={done || working}
+                      onClick={() => importSound(s)}
+                      className={`px-2.5 py-1 text-[10px] border transition ${
+                        done
+                          ? "border-green-400/30 text-green-400/80"
+                          : "border-white/[0.06] text-gray-400 hover:text-white hover:border-white/20"
+                      } disabled:opacity-50`}
+                    >
+                      {done ? "Imported" : working ? "..." : "Import"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
