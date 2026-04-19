@@ -40,6 +40,8 @@ export default function DatasetPage() {
   const [training, setTraining] = useState(false);
   const [trainError, setTrainError] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pageDrag, setPageDrag] = useState(false);
 
   const meta = LAYER_META[active];
 
@@ -112,8 +114,44 @@ export default function DatasetPage() {
     return m;
   }, []);
 
+  const audioLayer = LAYER_META[active].accepts.includes("audio");
+
+  const onPageDragOver = (e: React.DragEvent) => {
+    if (!audioLayer) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    setPageDrag(true);
+  };
+  const onPageDragLeave = (e: React.DragEvent) => {
+    if (e.relatedTarget && (e.currentTarget as Element).contains(e.relatedTarget as Node)) return;
+    setPageDrag(false);
+  };
+  const onPageDrop = (e: React.DragEvent) => {
+    if (!audioLayer) return;
+    e.preventDefault();
+    setPageDrag(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) {
+      setPendingFile(f);
+      setShowAdd(true);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div
+      className="min-h-screen bg-black text-white relative"
+      onDragOver={onPageDragOver}
+      onDragLeave={onPageDragLeave}
+      onDrop={onPageDrop}
+    >
+      {pageDrag && (
+        <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm pointer-events-none flex items-center justify-center">
+          <div className="border-2 border-dashed border-white/50 p-16 text-center">
+            <p className="font-display text-2xl text-white">Drop to add to {LAYER_META[active].title}</p>
+            <p className="text-[11px] text-gray-400 mt-2">Stays on your machine</p>
+          </div>
+        </div>
+      )}
       <header className="border-b border-white/[0.06]">
         <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 font-display text-sm tracking-wide">
@@ -247,9 +285,11 @@ export default function DatasetPage() {
       {showAdd && (
         <AddEntryModal
           layer={active}
-          onClose={() => setShowAdd(false)}
+          initialFile={pendingFile}
+          onClose={() => { setShowAdd(false); setPendingFile(null); }}
           onSaved={() => {
             setShowAdd(false);
+            setPendingFile(null);
             load(active);
             loadTrainable();
           }}
@@ -309,10 +349,12 @@ function AddEntryModal({
   layer,
   onClose,
   onSaved,
+  initialFile,
 }: {
   layer: DatasetLayer;
   onClose: () => void;
   onSaved: () => void;
+  initialFile?: File | null;
 }) {
   const meta = LAYER_META[layer];
   const [title, setTitle] = useState("");
@@ -324,8 +366,9 @@ function AddEntryModal({
   const [optIn, setOptIn] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
-  const uploadAudio = async (file: File) => {
+  const uploadAudio = useCallback(async (file: File) => {
     setUploading(true);
     setError(null);
     try {
@@ -336,13 +379,17 @@ function AddEntryModal({
       if (!r.ok) throw new Error(d.error ?? "Upload failed");
       setAudioUrl(d.audio_url);
       setAudioFileName(file.name);
-      if (!title) setTitle(file.name.replace(/\.[^.]+$/, ""));
+      setTitle((t) => t || file.name.replace(/\.[^.]+$/, ""));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (initialFile) uploadAudio(initialFile);
+  }, [initialFile, uploadAudio]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -408,7 +455,23 @@ function AddEntryModal({
                   <audio controls src={audioUrl} className="w-full h-8" />
                 </div>
               ) : (
-                <label className="block border border-dashed border-white/[0.12] hover:border-white/[0.24] p-4 text-center cursor-pointer transition">
+                <label
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+                  onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(false); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setDragging(false);
+                    const f = e.dataTransfer.files?.[0];
+                    if (f) uploadAudio(f);
+                  }}
+                  className={`block border-2 border-dashed py-10 px-4 text-center cursor-pointer transition ${
+                    dragging
+                      ? "border-white/60 bg-white/[0.04]"
+                      : "border-white/[0.14] hover:border-white/[0.28]"
+                  }`}
+                >
                   <input
                     type="file"
                     accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a,.aiff,.aif"
@@ -419,10 +482,16 @@ function AddEntryModal({
                     className="hidden"
                     disabled={uploading}
                   />
-                  <p className="text-[11px] text-gray-400">
-                    {uploading ? "Uploading..." : "Drop or click to upload audio"}
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="mx-auto mb-2 text-gray-500">
+                    <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <p className="text-xs text-white">
+                    {uploading ? "Uploading..." : dragging ? "Release to upload" : "Drop audio here"}
                   </p>
-                  <p className="text-[10px] text-gray-600 mt-1">wav, mp3, flac, ogg, m4a — stays on your machine</p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    or click to browse  ·  wav, mp3, flac, ogg, m4a
+                  </p>
+                  <p className="text-[9px] text-gray-600 mt-1">Stays on your machine</p>
                 </label>
               )}
             </div>
