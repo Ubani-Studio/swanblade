@@ -28,6 +28,115 @@ interface CanonJob {
   error_message: string | null;
 }
 
+interface CanonStatus {
+  stage: string;
+  progress: number;
+  message?: string;
+  step?: number;
+  max_steps?: number;
+  eta_seconds?: number;
+}
+
+const STAGE_LABEL: Record<string, string> = {
+  pending: "Queued",
+  preparing: "Preparing",
+  downloading_sources: "Staging audio",
+  converting_dataset: "Building dataset",
+  training: "Training",
+  exporting_lora: "Exporting LoRA",
+  completed: "Completed",
+  failed: "Failed",
+};
+
+function formatEta(seconds?: number) {
+  if (!seconds || seconds <= 0) return "";
+  if (seconds < 60) return `${seconds}s left`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return `${m}m ${s}s left`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${m % 60}m left`;
+}
+
+function CanonJobRow({ job, onTerminal }: { job: CanonJob; onTerminal: () => void }) {
+  const [status, setStatus] = useState<CanonStatus | null>(null);
+  const isTerminal = job.status === "completed" || job.status === "failed";
+
+  useEffect(() => {
+    if (isTerminal) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const poll = async () => {
+      try {
+        const r = await fetch(`/api/dataset/train-canon/status?job_id=${job.id}`);
+        if (!r.ok) return;
+        const d = await r.json();
+        if (stopped) return;
+        setStatus(d.status ?? null);
+        if (d.status?.stage === "completed" || d.status?.stage === "failed") {
+          onTerminal();
+          return;
+        }
+      } catch {}
+      if (!stopped) timer = setTimeout(poll, 5000);
+    };
+    poll();
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [job.id, isTerminal, onTerminal]);
+
+  const pct = Math.round((status?.progress ?? 0) * 100);
+  const stageLabel = isTerminal
+    ? STAGE_LABEL[job.status] ?? job.status
+    : STAGE_LABEL[status?.stage ?? "pending"] ?? status?.stage ?? "Pending";
+
+  const tone = job.status === "completed"
+    ? "text-green-400"
+    : job.status === "failed"
+      ? "text-red-400"
+      : "text-yellow-400";
+
+  return (
+    <div className="border border-white/[0.04] px-3 py-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] text-white truncate">{job.model_name ?? job.id.slice(0, 8)}</p>
+          <p className="text-[10px] text-gray-600 font-mono">{job.id.slice(0, 8)}  ·  {job.file_count} src  ·  {new Date(job.created_at).toLocaleDateString()}</p>
+        </div>
+        <div className={`text-[10px] ${tone}`}>{stageLabel}</div>
+      </div>
+
+      {!isTerminal && (
+        <div className="space-y-1">
+          <div className="h-1 bg-white/[0.06] overflow-hidden">
+            <div
+              className="h-full bg-white transition-all duration-500"
+              style={{ width: `${Math.max(2, pct)}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-[10px] text-gray-500">
+            <span>
+              {pct}%
+              {status?.step && status?.max_steps ? ` · step ${status.step}/${status.max_steps}` : ""}
+            </span>
+            <span>{formatEta(status?.eta_seconds)}</span>
+          </div>
+          {status?.message && (
+            <p className="text-[10px] text-gray-600 truncate">{status.message}</p>
+          )}
+        </div>
+      )}
+
+      {job.status === "failed" && job.error_message && (
+        <p className="text-[10px] text-red-400/80 line-clamp-2">{job.error_message}</p>
+      )}
+    </div>
+  );
+}
+
 const TRAINABLE_LAYERS: DatasetLayer[] = ["vocal_canon", "live_captures", "paired_controls"];
 
 export default function DatasetPage() {
@@ -199,25 +308,10 @@ export default function DatasetPage() {
           {trainError && <p className="text-[11px] text-red-400">{trainError}</p>}
 
           {canonJobs.length > 0 && (
-            <div className="pt-3 border-t border-white/[0.04] space-y-1.5">
+            <div className="pt-3 border-t border-white/[0.04] space-y-2">
               <p className="text-[10px] tracking-wide text-gray-500 uppercase">Canon jobs</p>
               {canonJobs.slice(0, 5).map((j) => (
-                <div key={j.id} className="flex items-center justify-between text-[11px]">
-                  <div className="min-w-0 flex-1">
-                    <span className="text-white">{j.model_name ?? j.id.slice(0, 8)}</span>
-                    <span className="text-gray-600 ml-2 font-mono text-[10px]">{j.id.slice(0, 8)}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-500">
-                    <span>{j.file_count} src</span>
-                    <span className={
-                      j.status === "completed" ? "text-green-400" :
-                      j.status === "failed" ? "text-red-400" : "text-yellow-400"
-                    }>
-                      {j.status}
-                    </span>
-                    <span>{new Date(j.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
+                <CanonJobRow key={j.id} job={j} onTerminal={loadCanonJobs} />
               ))}
             </div>
           )}
