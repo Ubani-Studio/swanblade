@@ -20,6 +20,8 @@ import {
   type TransformMode,
 } from "@/lib/soundTransform";
 import { saveToLibrary, getLibrarySound } from "@/lib/libraryStorage";
+import { createClient } from "@/lib/supabase/server";
+import { stampGeneration, ProvenanceEnforcementError } from "@/lib/provenance/stamp-generation";
 import type { TransformRequest, TransformResult, SoundGeneration } from "@/types";
 
 const historyStore = new TransformHistoryStore();
@@ -159,10 +161,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch the result audio so we can stamp it server-side.
+    let resultBuffer: Buffer | null = null;
+    try {
+      if (resultAudioUrl.startsWith("data:")) {
+        const b64 = resultAudioUrl.split(",", 2)[1] ?? "";
+        resultBuffer = Buffer.from(b64, "base64");
+      } else {
+        const r = await fetch(resultAudioUrl);
+        resultBuffer = Buffer.from(await r.arrayBuffer());
+      }
+    } catch (err) {
+      console.warn("[transform] could not fetch result for stamping:", err);
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    let provenance: Awaited<ReturnType<typeof stampGeneration>> | null = null;
+    if (user && resultBuffer) {
+      const now = new Date().toISOString();
+      try {
+        provenance = await stampGeneration({
+          supabase,
+          userId: user.id,
+          audio: resultBuffer,
+          title: transformPrompt.slice(0, 60) || "Transform",
+          prompt: transformPrompt,
+          pipelineSteps: [
+            {
+              stage: "musicgen",
+              adapter: "replicate.musicgen-melody",
+              status: "completed",
+              parameters: {
+                mode,
+                preserveRhythm: effectivePreserveRhythm,
+                preservePitch: effectivePreservePitch,
+                preserveTimbre: effectivePreserveTimbre,
+                strength: effectiveStrength,
+              },
+              started_at: now,
+              finished_at: now,
+              elapsed_ms: 0,
+            },
+          ],
+        });
+      } catch (err) {
+        if (err instanceof ProvenanceEnforcementError) {
+          return NextResponse.json({ error: err.message }, { status: 451 });
+        }
+        console.error("[transform] stamp failed:", err);
+      }
+    }
+
     // Build result
     const result: TransformResult = {
       audioUrl: resultAudioUrl,
       transformApplied: transformPrompt,
+      provenanceCid: provenance?.manifestId,
     };
 
     // Create sound object

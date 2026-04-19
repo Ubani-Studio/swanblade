@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkUsageLimit, recordUsage } from "@/lib/usage";
+import { stampGeneration, ProvenanceEnforcementError } from "@/lib/provenance/stamp-generation";
 import { execSync } from "child_process";
 import { readFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { join } from "path";
@@ -150,6 +151,38 @@ export async function POST(request: Request) {
       `[generate-lora] Generation complete: ${genId} (${(audioBuffer.byteLength / 1e6).toFixed(1)} MB)`
     );
 
+    const now = new Date().toISOString();
+    let provenance: Awaited<ReturnType<typeof stampGeneration>> | null = null;
+    try {
+      provenance = await stampGeneration({
+        supabase,
+        userId: user.id,
+        audio: audioBuffer,
+        title: prompt.trim().slice(0, 60) || `Generation ${genId.slice(0, 8)}`,
+        prompt: prompt.trim(),
+        pipelineSteps: [
+          {
+            stage: "stable-audio",
+            adapter: "modal.stable-audio-lora",
+            status: "completed",
+            parameters: {
+              duration_seconds: Number(duration_seconds),
+              seed: Number(seedValue),
+              lora_job_id: job_id,
+            },
+            started_at: now,
+            finished_at: now,
+            elapsed_ms: 0,
+          },
+        ],
+      });
+    } catch (err) {
+      if (err instanceof ProvenanceEnforcementError) {
+        return NextResponse.json({ error: err.message }, { status: 451 });
+      }
+      console.error("[generate-lora] stamp failed:", err);
+    }
+
     // Record usage for tier-based limits
     await recordUsage(supabase, user.id, "generation", {
       provider: "modal",
@@ -160,6 +193,13 @@ export async function POST(request: Request) {
       audioUrl,
       generationId: genId,
       loraJobId: job_id,
+      provenance: provenance && {
+        manifest_id: provenance.manifestId,
+        fingerprint: provenance.fingerprint,
+        signature: provenance.signature,
+        private_canon: provenance.privateCanon,
+        watermark_status: provenance.watermarkStatus,
+      },
     });
   } catch (err) {
     console.error("[generate-lora] Failed to download from Modal:", err);

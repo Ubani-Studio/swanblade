@@ -4,16 +4,27 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { O8Provenance, O8ProvenanceResult } from "@/lib/o8/types";
 
+/** Shape returned by the server-side stamp pipeline (08 Protocol + C2PA). */
+export interface SignedProvenance {
+  manifest_id: string;
+  fingerprint: string;
+  signature: string;
+  private_canon?: boolean;
+  watermark_status?: "sidecar" | "embedded" | "pending";
+}
+
 interface ProvenanceBadgeProps {
   provenance?: O8Provenance | null;
   provenanceResult?: O8ProvenanceResult | null;
+  signed?: SignedProvenance | null;
   className?: string;
 }
 
-export function ProvenanceBadge({ provenance, provenanceResult, className }: ProvenanceBadgeProps) {
+export function ProvenanceBadge({ provenance, provenanceResult, signed, className }: ProvenanceBadgeProps) {
   const [expanded, setExpanded] = useState(false);
+  const hasAny = provenance || provenanceResult || signed;
 
-  if (!provenance && !provenanceResult) {
+  if (!hasAny) {
     return (
       <div className={cn("flex items-center gap-2 text-gray-500", className)}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -23,6 +34,12 @@ export function ProvenanceBadge({ provenance, provenanceResult, className }: Pro
       </div>
     );
   }
+
+  const label = signed
+    ? "08 Protocol + C2PA Protected"
+    : provenance
+      ? "08 Protocol Verified"
+      : "C2PA Protected";
 
   return (
     <div className={cn("border border-[#1a1a1a] bg-black", className)}>
@@ -34,7 +51,12 @@ export function ProvenanceBadge({ provenance, provenanceResult, className }: Pro
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" fill="none" />
           <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span className="text-body-sm text-white">∞8 Verified</span>
+        <span className="text-body-sm text-white">{label}</span>
+        {signed?.private_canon && (
+          <span className="text-[9px] tracking-wide uppercase text-[#66023C] border border-[#66023C]/40 px-1.5 py-0.5">
+            Private Canon
+          </span>
+        )}
         <svg
           width="12"
           height="12"
@@ -48,7 +70,34 @@ export function ProvenanceBadge({ provenance, provenanceResult, className }: Pro
 
       {expanded && (
         <div className="border-t border-[#1a1a1a] px-3 py-2 space-y-2">
-          {provenance && (
+          {signed && (
+            <>
+              <div className="flex justify-between text-body-sm">
+                <span className="text-gray-500">Manifest</span>
+                <span className="text-white font-mono text-[11px]">
+                  {signed.manifest_id.slice(0, 12)}...
+                </span>
+              </div>
+              <div className="flex justify-between text-body-sm">
+                <span className="text-gray-500">08 Fingerprint</span>
+                <span className="text-white font-mono text-[11px]">
+                  {signed.fingerprint.slice(0, 24)}...
+                </span>
+              </div>
+              <div className="flex justify-between text-body-sm">
+                <span className="text-gray-500">Signature</span>
+                <span className="text-white font-mono text-[11px]">
+                  {signed.signature.slice(0, 16)}...
+                </span>
+              </div>
+              <div className="flex justify-between text-body-sm">
+                <span className="text-gray-500">Watermark</span>
+                <span className="text-white capitalize">{signed.watermark_status ?? "sidecar"}</span>
+              </div>
+            </>
+          )}
+
+          {provenance && !signed && (
             <>
               <div className="flex justify-between text-body-sm">
                 <span className="text-gray-500">Identity</span>
@@ -71,7 +120,7 @@ export function ProvenanceBadge({ provenance, provenanceResult, className }: Pro
             </>
           )}
 
-          {provenanceResult && (
+          {provenanceResult && !signed && (
             <>
               <div className="flex justify-between text-body-sm">
                 <span className="text-gray-500">IPFS CID</span>

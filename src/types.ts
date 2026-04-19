@@ -32,6 +32,19 @@ export interface SoundGeneration {
   // o8 Provenance
   provenanceCid?: string;
   identityId?: string;
+  // 08 Protocol + C2PA (server-stamped)
+  manifestId?: string;
+  origin8Fingerprint?: string;
+  signature?: string;
+  privateCanon?: boolean;
+  watermarkStatus?: "sidecar" | "embedded" | "pending";
+  pipelineSteps?: Array<{
+    stage: string;
+    adapter: string;
+    status: string;
+    parameters?: Record<string, unknown>;
+    elapsed_ms?: number;
+  }>;
 }
 
 export interface AudioReferencePayload {

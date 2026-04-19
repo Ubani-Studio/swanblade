@@ -13,6 +13,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useGenerationHistory } from "@/hooks/useGenerationHistory";
 import { usePresets, type GenerationPreset, type ChainRecipe, type ChainStep } from "@/hooks/usePresets";
 import { PresetsPanel } from "@/components/presets-panel";
+import { PipelinePanel, defaultPipelineValue, type PipelinePanelValue } from "@/components/studio/pipeline-panel";
 import { ProfileDropdown } from "@/components/studio/profile-dropdown";
 import { TrainingPanel } from "@/components/studio/training-panel";
 import { LoraSelector, type LoraSelection } from "@/components/studio/lora-selector";
@@ -151,6 +152,7 @@ export default function Home() {
   }, []);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [pipeline, setPipeline] = useState<PipelinePanelValue>(defaultPipelineValue());
 
   // o8 Identity state
   const [o8Identity, setO8Identity] = useState<O8Identity | null>(null);
@@ -448,7 +450,17 @@ export default function Home() {
     setIsGenerating(true);
 
     try {
-      let data: { audioUrl: string; provenanceCid?: string };
+      let data: {
+        audioUrl: string;
+        provenanceCid?: string;
+        provenance?: {
+          manifest_id: string;
+          fingerprint: string;
+          signature: string;
+          private_canon?: boolean;
+          watermark_status?: "sidecar" | "embedded" | "pending";
+        } | null;
+      };
 
       if (remixFile) {
         // Sculpt: encrypt audio -> POST to /api/remix -> get remixed audio back
@@ -534,6 +546,15 @@ export default function Home() {
         audioUrl: data.audioUrl,
         status: "ready" as const,
         provenanceCid: data.provenanceCid,
+        ...(data.provenance
+          ? {
+              manifestId: data.provenance.manifest_id,
+              origin8Fingerprint: data.provenance.fingerprint,
+              signature: data.provenance.signature,
+              privateCanon: data.provenance.private_canon,
+              watermarkStatus: data.provenance.watermark_status,
+            }
+          : {}),
         ...(selectedLora ? { loraId: selectedLora.id, loraName: selectedLora.name } : {}),
         ...(remixFile ? { remixSourceName: remixFile.name, remixStrength, remixEngine } : {}),
       };
@@ -789,6 +810,7 @@ export default function Home() {
                         value={selectedLora}
                         onChange={setSelectedLora}
                       />
+                      <PipelinePanel value={pipeline} onChange={setPipeline} />
                       <PresetsPanel
                         presets={presets}
                         onSelect={handleLoadPreset}

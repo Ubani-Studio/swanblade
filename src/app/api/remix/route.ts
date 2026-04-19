@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkUsageLimit, recordUsage } from "@/lib/usage";
+import { stampGeneration, ProvenanceEnforcementError } from "@/lib/provenance/stamp-generation";
+import type { PipelineStageKind } from "@/lib/pipeline/types";
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "fs";
 import { randomBytes, createCipheriv } from "crypto";
 import { join } from "path";
@@ -419,6 +421,43 @@ export async function POST(request: Request) {
       `[remix] Complete: ${genId} (${(audioBuffer.byteLength / 1e6).toFixed(1)} MB)`
     );
 
+    const stageKind: PipelineStageKind = engine === "vampnet" ? "vampnet" : engine === "magnet" ? "magnet" : "stable-audio";
+    const now = new Date().toISOString();
+    let provenance: Awaited<ReturnType<typeof stampGeneration>> | null = null;
+    try {
+      provenance = await stampGeneration({
+        supabase,
+        userId: user.id,
+        audio: audioBuffer,
+        title: (promptArg || `Sculpt ${remixId.slice(0, 8)}`).slice(0, 60),
+        prompt: promptArg || undefined,
+        pipelineSteps: [
+          {
+            stage: stageKind,
+            adapter: `modal.${stageKind}`,
+            status: "completed",
+            parameters: {
+              engine,
+              strength: safeStrength,
+              duration_seconds: Number(duration_seconds),
+              seed: Number(seedValue),
+              lora_job_id: lora_job_id ?? null,
+              transplant: Boolean(transplant),
+              reference_mastering: Boolean(referenceB64),
+            },
+            started_at: now,
+            finished_at: now,
+            elapsed_ms: 0,
+          },
+        ],
+      });
+    } catch (err) {
+      if (err instanceof ProvenanceEnforcementError) {
+        return NextResponse.json({ error: err.message }, { status: 451 });
+      }
+      console.error("[remix] stamp failed:", err);
+    }
+
     // Record usage for tier-based limits
     await recordUsage(supabase, user.id, "generation", {
       provider: engine,
@@ -429,6 +468,13 @@ export async function POST(request: Request) {
       audioUrl,
       generationId: genId,
       remixId,
+      provenance: provenance && {
+        manifest_id: provenance.manifestId,
+        fingerprint: provenance.fingerprint,
+        signature: provenance.signature,
+        private_canon: provenance.privateCanon,
+        watermark_status: provenance.watermarkStatus,
+      },
     });
   } catch (err) {
     console.error("[remix] Failed to download from Modal:", err);

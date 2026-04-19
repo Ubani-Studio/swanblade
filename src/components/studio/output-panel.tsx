@@ -160,7 +160,17 @@ export function OutputPanel({
                 {/* Provenance */}
                 {currentSound.status === "ready" && (
                   <div className="flex items-center justify-between py-3">
-                    {currentProvenance ? (
+                    {currentSound.manifestId ? (
+                      <ProvenanceBadge
+                        signed={{
+                          manifest_id: currentSound.manifestId,
+                          fingerprint: currentSound.origin8Fingerprint ?? "",
+                          signature: currentSound.signature ?? "",
+                          private_canon: currentSound.privateCanon,
+                          watermark_status: currentSound.watermarkStatus ?? "sidecar",
+                        }}
+                      />
+                    ) : currentProvenance ? (
                       <ProvenanceBadge provenance={currentProvenance} />
                     ) : (
                       <ProvenanceStampButton
