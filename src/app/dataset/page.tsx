@@ -1,0 +1,323 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { SwanbladeLogo } from "@/components/SwanbladeLogo";
+import { DATASET_LAYERS, LAYER_META, type DatasetLayer } from "@/lib/dataset/layers";
+
+interface Entry {
+  id: string;
+  layer: DatasetLayer;
+  kind: string | null;
+  title: string;
+  content_text: string | null;
+  audio_url: string | null;
+  data: Record<string, unknown>;
+  ai_training_opt_in: boolean;
+  created_at: string;
+}
+
+export default function DatasetPage() {
+  const [active, setActive] = useState<DatasetLayer>("vocal_canon");
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+
+  const meta = LAYER_META[active];
+
+  const load = useCallback(async (layer: DatasetLayer) => {
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/dataset/entries?layer=${layer}`);
+      const d = await r.json();
+      setEntries(d.entries ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load(active);
+  }, [active, load]);
+
+  const counts = useMemo(() => {
+    const m: Record<DatasetLayer, number> = {
+      vocal_canon: 0,
+      paired_controls: 0,
+      preference_rankings: 0,
+      automatic_writing: 0,
+      influence_corpus: 0,
+      live_captures: 0,
+      contextual_notes: 0,
+    };
+    return m;
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <header className="border-b border-white/[0.06]">
+        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3 font-display text-sm tracking-wide">
+            <SwanbladeLogo size={32} />
+            Swanblade
+          </Link>
+          <nav className="flex items-center gap-6 text-[11px] text-gray-500">
+            <Link href="/studio" className="hover:text-white">Studio</Link>
+            <Link href="/sovereignty" className="hover:text-white">Sovereignty</Link>
+            <span className="text-white">Dataset</span>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-12">
+        <div className="space-y-2 mb-10">
+          <h1 className="font-display text-4xl">Private dataset</h1>
+          <p className="text-sm text-gray-400 max-w-2xl">
+            Seven layers make up the moat. Feed each one with the kind of material it was built for.
+            Anything you add here can be opted into LoRA training and the taste reranker — or kept sovereign.
+          </p>
+        </div>
+
+        {/* Layer tabs */}
+        <div className="flex flex-wrap gap-1.5 mb-6">
+          {DATASET_LAYERS.map((layer) => {
+            const m = LAYER_META[layer];
+            const isActive = layer === active;
+            return (
+              <button
+                key={layer}
+                onClick={() => setActive(layer)}
+                className={`px-3 py-1.5 text-[10px] border transition ${
+                  isActive
+                    ? "border-white/30 text-white bg-white/[0.04]"
+                    : "border-white/[0.06] text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {m.title}
+                {counts[layer] > 0 && <span className="ml-1.5 text-gray-600">{counts[layer]}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        <section className="bg-black border border-white/[0.06] p-5 mb-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-white">{meta.title}</p>
+              <p className="text-[11px] text-gray-500 mt-1 max-w-xl">{meta.purpose}</p>
+            </div>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="px-3 py-1.5 text-[10px] border border-white/20 hover:bg-white hover:text-black transition"
+            >
+              + Add
+            </button>
+          </div>
+        </section>
+
+        {loading && <p className="text-xs text-gray-500">Loading...</p>}
+        {!loading && entries.length === 0 && (
+          <p className="text-xs text-gray-600">No entries yet. This layer is blank ground.</p>
+        )}
+
+        <div className="space-y-1">
+          {entries.map((e) => (
+            <EntryRow key={e.id} entry={e} onArchive={() => load(active)} />
+          ))}
+        </div>
+      </main>
+
+      {showAdd && (
+        <AddEntryModal
+          layer={active}
+          onClose={() => setShowAdd(false)}
+          onSaved={() => {
+            setShowAdd(false);
+            load(active);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EntryRow({ entry, onArchive }: { entry: Entry; onArchive: () => void }) {
+  const archive = async () => {
+    if (!confirm("Archive this entry?")) return;
+    await fetch(`/api/dataset/entries?id=${entry.id}`, { method: "DELETE" });
+    onArchive();
+  };
+  return (
+    <div className="border border-white/[0.04] px-4 py-3 flex items-start justify-between gap-4 hover:border-white/[0.12] transition">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-white truncate">{entry.title}</p>
+          {entry.kind && <span className="text-[9px] text-gray-600 uppercase tracking-wide">{entry.kind}</span>}
+          {!entry.ai_training_opt_in && (
+            <span className="text-[9px] tracking-wide uppercase text-[#66023C] border border-[#66023C]/40 px-1.5 py-0.5">
+              Not for training
+            </span>
+          )}
+        </div>
+        {entry.content_text && (
+          <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">{entry.content_text}</p>
+        )}
+        {entry.audio_url && (
+          <audio controls src={entry.audio_url} className="mt-2 h-7" />
+        )}
+        <p className="text-[10px] text-gray-600 mt-1">{new Date(entry.created_at).toLocaleDateString()}</p>
+      </div>
+      <button
+        onClick={archive}
+        className="text-[10px] text-gray-600 hover:text-red-400"
+      >
+        Archive
+      </button>
+    </div>
+  );
+}
+
+function AddEntryModal({
+  layer,
+  onClose,
+  onSaved,
+}: {
+  layer: DatasetLayer;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const meta = LAYER_META[layer];
+  const [title, setTitle] = useState("");
+  const [kind, setKind] = useState("");
+  const [content, setContent] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [optIn, setOptIn] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const r = await fetch("/api/dataset/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          layer,
+          title,
+          kind: kind || undefined,
+          content_text: content || undefined,
+          audio_url: audioUrl || undefined,
+          ai_training_opt_in: optIn,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? "Save failed");
+      onSaved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6" onClick={onClose}>
+      <form
+        className="bg-black border border-white/[0.08] max-w-xl w-full"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={submit}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+          <p className="text-sm text-white">Add to {meta.title}</p>
+          <button type="button" onClick={onClose} className="text-xs text-gray-500 hover:text-white">Close</button>
+        </div>
+        <div className="p-5 space-y-4">
+          <Input label="Title" value={title} onChange={setTitle} required placeholder={meta.placeholder.split(".")[0]} />
+          <Input label="Kind (optional)" value={kind} onChange={setKind} placeholder="e.g. lead, harmony, brighter" />
+          {meta.accepts.includes("text") && (
+            <Textarea label="Notes" value={content} onChange={setContent} placeholder={meta.placeholder} />
+          )}
+          {meta.accepts.includes("audio") && (
+            <Input label="Audio URL (optional)" value={audioUrl} onChange={setAudioUrl} placeholder="Paste a signed URL or library link" />
+          )}
+          <label className="flex items-center justify-between text-[11px] text-gray-400 border border-white/[0.04] px-3 py-2">
+            <span>Include in AI training (LoRA + reranker)</span>
+            <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />
+          </label>
+          {error && <p className="text-[11px] text-red-400">{error}</p>}
+        </div>
+        <div className="p-5 border-t border-white/[0.06] flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1.5 text-[10px] border border-white/[0.06] text-gray-400 hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !title}
+            className="px-3 py-1.5 text-[10px] border border-white/20 hover:bg-white hover:text-black transition disabled:opacity-40"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Input({
+  label,
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-[10px] tracking-wide text-gray-500 uppercase">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        required={required}
+        className="w-full bg-[#0a0a0a] border border-white/[0.06] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/20"
+      />
+    </label>
+  );
+}
+
+function Textarea({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-[10px] tracking-wide text-gray-500 uppercase">{label}</span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={5}
+        className="w-full bg-[#0a0a0a] border border-white/[0.06] px-3 py-2 text-xs text-white focus:outline-none focus:border-white/20 resize-y"
+      />
+    </label>
+  );
+}

@@ -1,4 +1,5 @@
 import type { PipelineStageKind, StageAdapter } from "../types";
+import { aceStepAdapter } from "./ace-step";
 import { notWiredAdapter } from "./base";
 import { customDspAdapter } from "./custom-dsp";
 
@@ -12,11 +13,7 @@ import { customDspAdapter } from "./custom-dsp";
  * honest in Private Canon mode.
  */
 const REGISTRY: Record<PipelineStageKind, StageAdapter> = {
-  "ace-step": notWiredAdapter(
-    "ace-step",
-    "ace-step/1.5",
-    "ACE-Step backend is not configured. Set PIPELINE_ACE_STEP_URL and deploy the Modal script.",
-  ),
+  "ace-step": aceStepAdapter,
   audiox: notWiredAdapter(
     "audiox",
     "audiox/0.1",

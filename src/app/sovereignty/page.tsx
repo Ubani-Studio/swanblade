@@ -83,6 +83,7 @@ export default function SovereigntyPage() {
           </Link>
           <nav className="flex items-center gap-6 text-[11px] text-gray-500">
             <Link href="/studio" className="hover:text-white">Studio</Link>
+            <Link href="/dataset" className="hover:text-white">Dataset</Link>
             <span className="text-white">Sovereignty</span>
           </nav>
         </div>

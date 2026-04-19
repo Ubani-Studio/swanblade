@@ -144,8 +144,6 @@ export async function POST(request: Request) {
 
     // Read and convert to data URL
     const audioBuffer = readFileSync(localWavPath);
-    const base64 = audioBuffer.toString("base64");
-    const audioUrl = `data:audio/wav;base64,${base64}`;
 
     console.log(
       `[generate-lora] Generation complete: ${genId} (${(audioBuffer.byteLength / 1e6).toFixed(1)} MB)`
@@ -188,6 +186,9 @@ export async function POST(request: Request) {
       provider: "modal",
       model: "stable-audio-lora",
     });
+
+    const outputBuffer = provenance?.signedAudio ?? audioBuffer;
+    const audioUrl = `data:audio/wav;base64,${outputBuffer.toString("base64")}`;
 
     return NextResponse.json({
       audioUrl,

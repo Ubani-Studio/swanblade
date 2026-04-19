@@ -414,8 +414,6 @@ export async function POST(request: Request) {
     }
 
     const audioBuffer = readFileSync(localWavPath);
-    const base64 = audioBuffer.toString("base64");
-    const audioUrl = `data:audio/wav;base64,${base64}`;
 
     console.log(
       `[remix] Complete: ${genId} (${(audioBuffer.byteLength / 1e6).toFixed(1)} MB)`
@@ -463,6 +461,9 @@ export async function POST(request: Request) {
       provider: engine,
       model: engine === "vampnet" ? "vampnet" : engine === "magnet" ? "magnet" : "stable-audio",
     });
+
+    const outputBuffer = provenance?.signedAudio ?? audioBuffer;
+    const audioUrl = `data:audio/wav;base64,${outputBuffer.toString("base64")}`;
 
     return NextResponse.json({
       audioUrl,

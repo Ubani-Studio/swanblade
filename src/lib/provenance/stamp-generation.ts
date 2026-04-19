@@ -17,6 +17,7 @@ import { randomUUID } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildC2paManifest } from "@/lib/c2pa/manifest";
+import { embedC2paManifest } from "@/lib/c2pa/embed";
 import { signManifest } from "@/lib/c2pa/sign";
 import { computeOrigin8Fingerprint } from "@/lib/origin8/fingerprint";
 import type { PipelineStepTrace } from "@/lib/pipeline/types";
@@ -42,6 +43,9 @@ export interface StampOutput {
   privateCanon: boolean;
   aiTrainingOptIn: boolean;
   watermarkStatus: "sidecar" | "embedded" | "pending";
+  /** Signed audio buffer when embedding succeeded; the caller should ship
+   * this in place of the original so provenance travels with the file. */
+  signedAudio?: Buffer;
 }
 
 export class ProvenanceEnforcementError extends Error {
@@ -77,7 +81,7 @@ export async function stampGeneration(input: StampInput): Promise<StampOutput> {
   }
 
   const instanceId = randomUUID();
-  const watermarkStatus: "sidecar" | "embedded" | "pending" = "sidecar";
+  let watermarkStatus: "sidecar" | "embedded" | "pending" = "sidecar";
 
   const manifest = buildC2paManifest({
     title: input.title,
@@ -96,6 +100,16 @@ export async function stampGeneration(input: StampInput): Promise<StampOutput> {
   });
 
   const signed = signManifest(manifest);
+
+  // Attempt binary C2PA embedding (JUMBF). Falls back to sidecar-only.
+  const embed = await embedC2paManifest(input.audio, input.format ?? "audio/wav", manifest);
+  watermarkStatus = embed.watermarkStatus;
+
+  if (prefs.private_canon && watermarkStatus !== "embedded") {
+    // Private Canon prefers embedded provenance but doesn't hard-fail on
+    // format gaps — we still have a signed row + sidecar. Log loudly.
+    console.warn("[stamp] Private Canon: manifest is sidecar (embed reason: ", embed.reason, ")");
+  }
 
   const { data, error } = await input.supabase
     .from("provenance_manifests")
@@ -136,5 +150,6 @@ export async function stampGeneration(input: StampInput): Promise<StampOutput> {
     privateCanon: prefs.private_canon,
     aiTrainingOptIn: prefs.ai_training_opt_in,
     watermarkStatus,
+    signedAudio: watermarkStatus === "embedded" ? embed.audio : undefined,
   };
 }

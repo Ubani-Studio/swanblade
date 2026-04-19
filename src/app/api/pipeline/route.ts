@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
       pipelineSteps: result.steps,
     });
 
-    const audioUrl = `data:audio/wav;base64,${result.audio.toString("base64")}`;
+    const outputBuffer = stamp.signedAudio ?? result.audio;
+    const audioUrl = `data:audio/wav;base64,${outputBuffer.toString("base64")}`;
     return NextResponse.json({
       audioUrl,
       steps: result.steps,
